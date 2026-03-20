@@ -21,7 +21,6 @@ export default function Favorites() {
           <h2>Your Favorites</h2>
           <p>Places you saved for later</p>
         </div>
-
         <div className="restaurant-grid">
           {items.map((item) => (
             <RestaurantCard key={item.restaurant_id} data={item} />

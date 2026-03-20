@@ -18,14 +18,8 @@ const cities = [
   "Atlanta"
 ]
 
-const activityImages = [
-  "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=900&q=80"
-]
+const heroBackground =
+  "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1600&q=80"
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([])
@@ -38,20 +32,16 @@ export default function Home() {
       .catch(() => setRestaurants([]))
   }, [])
 
-  const filteredRestaurants = useMemo(() => {
+  const filtered = useMemo(() => {
     return restaurants.filter((r) => {
-      const keyword = search.toLowerCase()
-      const nameMatch =
-        (r.name || "").toLowerCase().includes(keyword) ||
-        (r.cuisine_type || "").toLowerCase().includes(keyword)
-      const cityMatch = city ? (r.city || "").toLowerCase().includes(city.toLowerCase()) : true
-      return nameMatch && cityMatch
+      const q = search.toLowerCase()
+      const matchText =
+        (r.name || "").toLowerCase().includes(q) ||
+        (r.cuisine_type || "").toLowerCase().includes(q)
+      const matchCity = city ? (r.city || "").toLowerCase().includes(city.toLowerCase()) : true
+      return matchText && matchCity
     })
   }, [restaurants, search, city])
-
-  const featured = filteredRestaurants.slice(0, 6)
-  const heroBackground =
-    "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1600&q=80"
 
   return (
     <div className="page-shell">
@@ -104,36 +94,14 @@ export default function Home() {
 
       <section id="activity" className="section light-section">
         <div className="container">
-          <div className="section-heading">
+          <div className="section-heading center-align">
             <h2>Popular Restaurants</h2>
             <p>Top places users are exploring right now</p>
           </div>
 
-          <div className="activity-grid">
-            {featured.map((item, index) => (
-              <div key={item.restaurant_id} className="activity-card">
-                <div className="activity-card-top">
-                  <div className="avatar-circle">{(item.name || "R").slice(0, 1).toUpperCase()}</div>
-                  <div>
-                    <h4>{item.name}</h4>
-                    <span>{item.city || "Popular now"}</span>
-                  </div>
-                </div>
-
-                <img
-                  src={item.photos?.[0] || activityImages[index % activityImages.length]}
-                  alt={item.name}
-                  className="activity-image"
-                />
-
-                <div className="activity-card-body">
-                  <div className="activity-rating-row">
-                    <span className="mini-stars">★★★★★</span>
-                    <span>{Number(item.avg_rating || 0).toFixed(1)}</span>
-                  </div>
-                  <p>{item.cuisine_type || "Restaurant"} • {item.review_count || 0} reviews</p>
-                </div>
-              </div>
+          <div className="restaurant-grid">
+            {filtered.slice(0, 6).map((restaurant) => (
+              <RestaurantCard key={restaurant.restaurant_id} data={restaurant} />
             ))}
           </div>
         </div>
@@ -147,7 +115,7 @@ export default function Home() {
           </div>
 
           <div className="restaurant-grid">
-            {filteredRestaurants.map((restaurant) => (
+            {filtered.map((restaurant) => (
               <RestaurantCard key={restaurant.restaurant_id} data={restaurant} />
             ))}
           </div>
