@@ -6,11 +6,9 @@ from app.db import get_db
 from app.models import User, Owner
 from app.security import decode_token
 
-# Separate schemes so Swagger "Authorize" works for both token URLs
-user_oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/user/login")
-owner_oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/owner/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-def get_current_user(db: Session = Depends(get_db), token: str = Depends(user_oauth2)) -> User:
+def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     try:
         payload = decode_token(token)
     except ValueError:
@@ -19,13 +17,17 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(user_oa
     if payload.get("role") != "user":
         raise HTTPException(status_code=403, detail="User token required")
 
-    user_id = int(payload["sub"])
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = db.query(User).filter(User.user_id == int(user_id)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
-def get_current_owner(db: Session = Depends(get_db), token: str = Depends(owner_oauth2)) -> Owner:
+
+def get_current_owner(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> Owner:
     try:
         payload = decode_token(token)
     except ValueError:
@@ -34,8 +36,11 @@ def get_current_owner(db: Session = Depends(get_db), token: str = Depends(owner_
     if payload.get("role") != "owner":
         raise HTTPException(status_code=403, detail="Owner token required")
 
-    owner_id = int(payload["sub"])
-    owner = db.query(Owner).filter(Owner.owner_id == owner_id).first()
+    owner_id = payload.get("sub")
+    if owner_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    owner = db.query(Owner).filter(Owner.owner_id == int(owner_id)).first()
     if not owner:
         raise HTTPException(status_code=401, detail="Owner not found")
     return owner

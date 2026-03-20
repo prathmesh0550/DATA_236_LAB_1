@@ -5,7 +5,6 @@ from app.routers import auth, users, restaurants, reviews, favorites, owners
 
 app = FastAPI()
 
-# Allow React dev server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -13,6 +12,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {"message": "API is running"}
 
 app.include_router(auth.router)
 app.include_router(users.router)

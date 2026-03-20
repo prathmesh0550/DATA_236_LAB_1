@@ -14,9 +14,10 @@ def hash_password(password: str):
 def verify_password(password: str, hashed: str):
     return pwd_ctx.verify(password, hashed)
 
-def create_access_token(user_id: int):
+def create_access_token(user_id: int, role: str):
     payload = {
         "sub": str(user_id),
+        "role": role,
         "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -24,6 +25,6 @@ def create_access_token(user_id: int):
 def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return int(payload["sub"])
+        return payload
     except JWTError:
-        return None
+        raise ValueError("Invalid or expired token")

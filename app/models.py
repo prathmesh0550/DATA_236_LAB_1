@@ -117,7 +117,7 @@ class Favorite(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)
     restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id", ondelete="CASCADE"), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    __table_args__ = (UniqueConstraint("user_id", "restaurant_id", name="uq_favorite_user_restaurant"))
+    __table_args__ = (UniqueConstraint("user_id", "restaurant_id", name="uq_favorite_user_restaurant"),)
     user = relationship("User", back_populates="favorites")
     restaurant = relationship("Restaurant", back_populates="favorites")
 

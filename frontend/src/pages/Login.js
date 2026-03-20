@@ -9,7 +9,17 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const res = await API.post("/auth/user/login", { email, password })
+
+    const formData = new URLSearchParams()
+    formData.append("username", email)
+    formData.append("password", password)
+
+    const res = await API.post("/auth/user/login", formData, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    })
+
     localStorage.setItem("token", res.data.access_token)
     navigate("/")
   }

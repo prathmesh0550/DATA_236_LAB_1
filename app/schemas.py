@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
@@ -8,9 +9,11 @@ class UserSignupIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
 
+
 class UserLoginIn(BaseModel):
     email: EmailStr
     password: str
+
 
 class OwnerSignupIn(BaseModel):
     name: str
@@ -18,13 +21,16 @@ class OwnerSignupIn(BaseModel):
     password: str = Field(min_length=6)
     restaurant_location: Optional[str] = None
 
+
 class OwnerLoginIn(BaseModel):
     email: EmailStr
     password: str
 
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
 
 class UserOut(BaseModel):
     user_id: int
@@ -33,6 +39,7 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class OwnerOut(BaseModel):
     owner_id: int
@@ -61,6 +68,7 @@ class UserProfileOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class UserProfileUpdateIn(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
@@ -71,8 +79,9 @@ class UserProfileUpdateIn(BaseModel):
     languages: Optional[List[str]] = None
     gender: Optional[str] = None
 
+
 class ProfilePictureIn(BaseModel):
-    profile_picture: str  # URL or path
+    profile_picture: str
 
 
 # ---------- PREFERENCES ----------
@@ -87,6 +96,7 @@ class PreferencesOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class PreferencesIn(PreferencesOut):
     pass
 
@@ -97,26 +107,22 @@ class RestaurantCreateIn(BaseModel):
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
     address: Optional[str] = None
-    zip: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
-    price: Optional[str] = None
-    amenities: Optional[List[str]] = None
     photos: Optional[List[str]] = None
+
 
 class RestaurantUpdateIn(BaseModel):
     name: Optional[str] = None
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
     address: Optional[str] = None
-    zip: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
-    price: Optional[str] = None
-    amenities: Optional[List[str]] = None
     photos: Optional[List[str]] = None
+
 
 class RestaurantOut(BaseModel):
     restaurant_id: int
@@ -124,12 +130,9 @@ class RestaurantOut(BaseModel):
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
     address: Optional[str] = None
-    zip: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
-    price: Optional[str] = None
-    amenities: Optional[List[str]] = None
     avg_rating: float
     review_count: int
     photos: Optional[List[str]] = None
@@ -139,18 +142,19 @@ class RestaurantOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class RestaurantCardOut(BaseModel):
     restaurant_id: int
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    price: Optional[str] = None
     avg_rating: float
     review_count: int
     photos: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
+
 
 class AddPhotosIn(BaseModel):
     photos: List[str]
@@ -162,10 +166,12 @@ class ReviewCreateIn(BaseModel):
     comment: Optional[str] = None
     photos: Optional[List[str]] = None
 
+
 class ReviewUpdateIn(BaseModel):
     rating: Optional[int] = Field(default=None, ge=1, le=5)
     comment: Optional[str] = None
     photos: Optional[List[str]] = None
+
 
 class ReviewOut(BaseModel):
     review_id: int
@@ -173,7 +179,7 @@ class ReviewOut(BaseModel):
     user_id: int
     rating: int
     comment: Optional[str] = None
-    review_date: str
+    review_date: datetime
     photos: Optional[List[str]] = None
 
     class Config:
