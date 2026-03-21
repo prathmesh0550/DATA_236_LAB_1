@@ -3,7 +3,6 @@ from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
 
-# ---------- AUTH ----------
 class UserSignupIn(BaseModel):
     name: str
     email: EmailStr
@@ -51,7 +50,6 @@ class OwnerOut(BaseModel):
         from_attributes = True
 
 
-# ---------- USER PROFILE ----------
 class UserProfileOut(BaseModel):
     user_id: int
     name: str
@@ -84,7 +82,6 @@ class ProfilePictureIn(BaseModel):
     profile_picture: str
 
 
-# ---------- PREFERENCES ----------
 class PreferencesOut(BaseModel):
     cuisines: Optional[List[str]] = None
     price_range: Optional[str] = None
@@ -101,7 +98,6 @@ class PreferencesIn(PreferencesOut):
     pass
 
 
-# ---------- RESTAURANTS ----------
 class RestaurantCreateIn(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
@@ -160,7 +156,6 @@ class AddPhotosIn(BaseModel):
     photos: List[str]
 
 
-# ---------- REVIEWS ----------
 class ReviewCreateIn(BaseModel):
     rating: int = Field(ge=1, le=5)
     comment: Optional[str] = None
