@@ -1,9 +1,3 @@
-"""
-POST /favorites/{restaurant_id}
-DELETE /favorites/{restaurant_id}
-GET /users/me/favorites
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 

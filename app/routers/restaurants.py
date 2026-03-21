@@ -1,9 +1,3 @@
-"""
-GET /restaurants
-GET /restaurants/{id}
-POST /restaurants (user adds listing)
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -39,7 +33,7 @@ def search_restaurants(
     if zip:
         q = q.filter(Restaurant.zip.ilike(f"%{zip}%"))
     if price:
-        q = q.filter(Restaurant.price == price)
+        q = q.filter(Restaurant.price_tier == price)  # fixed: was Restaurant.price
     if keyword:
         q = q.filter(or_(
             Restaurant.name.ilike(f"%{keyword}%"),
@@ -79,6 +73,7 @@ def create_restaurant(
         description=body.description,
         hours=body.hours,
         contact_info=body.contact_info,
+        price_tier=body.price_tier,       # fixed: was missing
         created_by_user_id=current_user.user_id,
     )
     db.add(restaurant)

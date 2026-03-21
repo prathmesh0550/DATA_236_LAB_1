@@ -1,11 +1,3 @@
-"""
-GET /users/me
-PUT /users/me
-GET /users/me/preferences
-PUT /users/me/preferences
-GET /users/me/history
-"""
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

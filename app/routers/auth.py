@@ -11,7 +11,6 @@ from app.deps import get_current_user, get_current_owner
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# ---------- USER SIGNUP ----------
 @router.post("/user/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def user_signup(body: UserSignupIn, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == body.email).first():
@@ -33,7 +32,6 @@ def user_signup(body: UserSignupIn, db: Session = Depends(get_db)):
     return user
 
 
-# ---------- OWNER SIGNUP ----------
 @router.post("/owner/signup", response_model=OwnerOut, status_code=status.HTTP_201_CREATED)
 def owner_signup(body: OwnerSignupIn, db: Session = Depends(get_db)):
     if db.query(Owner).filter(Owner.email == body.email).first():
@@ -51,19 +49,16 @@ def owner_signup(body: OwnerSignupIn, db: Session = Depends(get_db)):
     return owner
 
 
-# ---------- SHARED LOGIN FOR SWAGGER ----------
 @router.post("/login", response_model=TokenOut)
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    # Try user first
     user = db.query(User).filter(User.email == form_data.username).first()
     if user and verify_password(form_data.password, user.password_hash):
         token = create_access_token(user.user_id, role="user")
         return TokenOut(access_token=token, token_type="bearer")
 
-    # Then try owner
     owner = db.query(Owner).filter(Owner.email == form_data.username).first()
     if owner and verify_password(form_data.password, owner.password_hash):
         token = create_access_token(owner.owner_id, role="owner")
@@ -72,7 +67,6 @@ def login(
     raise HTTPException(status_code=401, detail="Invalid email or password")
 
 
-# ---------- OPTIONAL: KEEP SEPARATE LOGINS TOO ----------
 @router.post("/user/login", response_model=TokenOut)
 def user_login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -101,13 +95,11 @@ def owner_login(
     return TokenOut(access_token=token, token_type="bearer")
 
 
-# ---------- LOGOUT ----------
 @router.post("/user/logout")
 def user_logout():
     return {"ok": True, "message": "Delete token on client. Server-side logout requires a blacklist."}
 
 
-# ---------- CURRENT AUTHED USER / OWNER ----------
 @router.get("/user/me", response_model=UserOut)
 def user_me(current_user: User = Depends(get_current_user)):
     return current_user

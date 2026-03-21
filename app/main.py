@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, users, restaurants, reviews, favorites, owners
+from app.routers import auth, users, restaurants, reviews, favorites, owners, ai_chatbot
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()
 
@@ -23,3 +25,4 @@ app.include_router(restaurants.router)
 app.include_router(reviews.router)
 app.include_router(favorites.router)
 app.include_router(owners.router)
+app.include_router(ai_chatbot.router)

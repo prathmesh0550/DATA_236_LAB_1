@@ -1,9 +1,17 @@
-# app/db.py
+import os
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from typing import Generator
+from dotenv import load_dotenv
 
-DATABASE_URL = "mysql+pymysql://root:TTGSKA1R@localhost:3306/yelp_db"
+# Explicitly find .env relative to this file
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not set in .env file")
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 

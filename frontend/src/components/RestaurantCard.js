@@ -33,6 +33,7 @@ export default function RestaurantCard({ data }) {
 
         <p className="restaurant-meta">
           {data?.cuisine_type || "Restaurant"} • {data?.city || "City"}
+          {data?.price_tier && <> • {data.price_tier}</>}
         </p>
 
         <div className="restaurant-card-actions">

@@ -1,4 +1,3 @@
-# app/models.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -66,6 +65,7 @@ class Restaurant(Base):
     description = Column(Text, nullable=True)
     hours = Column(Text, nullable=True)
     contact_info = Column(Text, nullable=True)
+    price_tier = Column(String(10), nullable=True, index=True)
     avg_rating = Column(Float, default=0.0, nullable=False)
     review_count = Column(Integer, default=0, nullable=False)
     photos = Column(JSON, nullable=True)

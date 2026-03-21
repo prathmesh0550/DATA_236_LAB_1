@@ -106,6 +106,7 @@ class RestaurantCreateIn(BaseModel):
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
+    price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
 
 
@@ -117,6 +118,7 @@ class RestaurantUpdateIn(BaseModel):
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
+    price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
 
 
@@ -129,6 +131,7 @@ class RestaurantOut(BaseModel):
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
+    price_tier: Optional[str] = None
     avg_rating: float
     review_count: int
     photos: Optional[List[str]] = None
@@ -146,11 +149,21 @@ class RestaurantCardOut(BaseModel):
     city: Optional[str] = None
     avg_rating: float
     review_count: int
+    price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
 
+
+class RestaurantCard(BaseModel):
+    restaurant_id: int
+    name: str
+    cuisine_type: Optional[str]
+    city: Optional[str]
+    avg_rating: Optional[float]
+    review_count: Optional[int]
+    price_tier: Optional[str] = None
 
 class AddPhotosIn(BaseModel):
     photos: List[str]
@@ -206,3 +219,15 @@ class UserHistoryRestaurantOut(BaseModel):
 class UserHistoryOut(BaseModel):
     reviews: list[UserHistoryReviewOut]
     restaurants_added: list[UserHistoryRestaurantOut]
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[ChatMessage]] = []
+
+class ChatResponse(BaseModel):
+    reply: str
+    restaurants: List[RestaurantCard] = []

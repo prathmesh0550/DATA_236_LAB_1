@@ -93,7 +93,8 @@ export default function RestaurantDetails() {
               <span>{restaurant.address || "No address"}</span>
               <span>{restaurant.hours || "Hours unavailable"}</span>
               <span>{restaurant.contact_info || "No contact info"}</span>
-              <span>{restaurant.avg_rating || 0}</span>
+              {restaurant.price_tier && <span>{restaurant.price_tier}</span>}
+              <span>{Number(restaurant.avg_rating || 0).toFixed(1)} ★</span>
               <span>{restaurant.review_count || 0} reviews</span>
             </div>
 
