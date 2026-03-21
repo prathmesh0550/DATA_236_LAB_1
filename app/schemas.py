@@ -184,3 +184,30 @@ class ReviewOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UserHistoryReviewOut(BaseModel):
+    review_id: int
+    restaurant_id: int
+    restaurant_name: str
+    rating: int
+    comment: str | None = None
+    review_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserHistoryRestaurantOut(BaseModel):
+    restaurant_id: int
+    name: str
+    cuisine_type: str
+    city: str
+    created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserHistoryOut(BaseModel):
+    reviews: list[UserHistoryReviewOut]
+    restaurants_added: list[UserHistoryRestaurantOut]

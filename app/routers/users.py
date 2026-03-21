@@ -11,10 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import User, UserPreference, Restaurant, Review
-from app.schemas import (
-    UserProfileOut, UserProfileUpdateIn, ProfilePictureIn,
-    PreferencesOut, PreferencesIn
-)
+from app.schemas import (UserProfileOut, UserProfileUpdateIn, ProfilePictureIn,
+PreferencesOut, PreferencesIn, UserHistoryOut, UserHistoryRestaurantOut, UserHistoryReviewOut)
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -83,41 +81,50 @@ def upsert_preferences(
     return pref
 
 
-@router.get("/me/history")
-def history(
+@router.get("/users/me/history", response_model=UserHistoryOut)
+def get_user_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     reviews = (
-        db.query(Review)
+        db.query(Review, Restaurant.name)
+        .join(Restaurant, Restaurant.restaurant_id == Review.restaurant_id)
         .filter(Review.user_id == current_user.user_id)
         .order_by(Review.review_date.desc())
         .all()
     )
-    restaurants = (
+
+    restaurants_added = (
         db.query(Restaurant)
         .filter(Restaurant.created_by_user_id == current_user.user_id)
         .order_by(Restaurant.created_at.desc())
         .all()
     )
 
-    return {
-        "reviews": [
-            {
-                "review_id": r.review_id,
-                "restaurant_id": r.restaurant_id,
-                "rating": r.rating,
-                "comment": r.comment,
-                "review_date": r.review_date.isoformat(),
-            }
-            for r in reviews
-        ],
-        "restaurants_created": [
-            {
-                "restaurant_id": x.restaurant_id,
-                "name": x.name,
-                "created_at": x.created_at.isoformat(),
-            }
-            for x in restaurants
-        ],
-    }
+    review_items = [
+        UserHistoryReviewOut(
+            review_id=review.review_id,
+            restaurant_id=review.restaurant_id,
+            restaurant_name=restaurant_name,
+            rating=review.rating,
+            comment=review.comment,
+            review_date=review.review_date,
+        )
+        for review, restaurant_name in reviews
+    ]
+
+    restaurant_items = [
+        UserHistoryRestaurantOut(
+            restaurant_id=r.restaurant_id,
+            name=r.name,
+            cuisine_type=r.cuisine_type,
+            city=r.city,
+            created_at=getattr(r, "created_at", None),
+        )
+        for r in restaurants_added
+    ]
+
+    return UserHistoryOut(
+        reviews=review_items,
+        restaurants_added=restaurant_items,
+    )

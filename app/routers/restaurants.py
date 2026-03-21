@@ -26,7 +26,7 @@ def search_restaurants(
     city: str | None = Query(default=None),
     zip: str | None = Query(default=None),
     price: str | None = Query(default=None),
-    sort: str | None = Query(default="rating"),  # rating|new|reviews
+    sort: str | None = Query(default="rating"),
 ):
     q = db.query(Restaurant)
 
@@ -65,17 +65,26 @@ def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
     return r
 
 
-@router.post("", response_model=RestaurantOut, status_code=status.HTTP_201_CREATED)
+@router.post("/restaurants")
 def create_restaurant(
     body: RestaurantCreateIn,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    r = Restaurant(**body.model_dump(), created_by_user_id=current_user.user_id)
-    db.add(r)
+    restaurant = Restaurant(
+        name=body.name,
+        cuisine_type=body.cuisine_type,
+        city=body.city,
+        address=body.address,
+        description=body.description,
+        hours=body.hours,
+        contact_info=body.contact_info,
+        created_by_user_id=current_user.user_id,
+    )
+    db.add(restaurant)
     db.commit()
-    db.refresh(r)
-    return r
+    db.refresh(restaurant)
+    return restaurant
 
 
 @router.put("/{restaurant_id}", response_model=RestaurantOut)
