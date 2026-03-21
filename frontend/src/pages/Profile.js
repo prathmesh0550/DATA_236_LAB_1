@@ -1,49 +1,55 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import API from "../api/axios"
 
 export default function Profile() {
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    city: "",
-    state: "",
-    country: "",
-    about_me: "",
-    gender: ""
-  })
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
-    API.get("/users/me").then((res) => setForm({ ...form, ...res.data }))
+    API.get("/users/me").then((res) => setUser(res.data))
   }, [])
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const save = async (e) => {
-    e.preventDefault()
-    await API.put("/users/me", form)
-    alert("Profile updated")
-  }
+  if (!user) return null
 
   return (
     <div className="subpage">
       <Navbar />
       <div className="subpage-spacer"></div>
       <div className="container">
-        <div className="simple-card">
-          <h2>Profile</h2>
-          <form className="auth-form" onSubmit={save}>
-            <input name="name" value={form.name || ""} onChange={handleChange} placeholder="Name" />
-            <input name="phone" value={form.phone || ""} onChange={handleChange} placeholder="Phone" />
-            <input name="city" value={form.city || ""} onChange={handleChange} placeholder="City" />
-            <input name="state" value={form.state || ""} onChange={handleChange} placeholder="State" />
-            <input name="country" value={form.country || ""} onChange={handleChange} placeholder="Country" />
-            <input name="gender" value={form.gender || ""} onChange={handleChange} placeholder="Gender" />
-            <input name="about_me" value={form.about_me || ""} onChange={handleChange} placeholder="About me" />
-            <button type="submit" className="btn btn-primary full-width">Save Profile</button>
-          </form>
+        <div className="view-card">
+          <div className="view-card-header">
+            <h2>Profile</h2>
+            <Link to="/profile/edit" className="btn btn-primary">Edit Profile</Link>
+          </div>
+
+          <div className="profile-view-top">
+            <img
+              src={user.profile_picture || "https://placehold.co/160x160/png?text=User"}
+              alt={user.name}
+              className="profile-photo"
+            />
+            <div className="profile-main-info">
+              <h3>{user.name || "User"}</h3>
+              <p>{user.email || ""}</p>
+            </div>
+          </div>
+
+          <div className="info-grid">
+            <div><span>Name</span><strong>{user.name || "-"}</strong></div>
+            <div><span>Email</span><strong>{user.email || "-"}</strong></div>
+            <div><span>Phone</span><strong>{user.phone || "-"}</strong></div>
+            <div><span>City</span><strong>{user.city || "-"}</strong></div>
+            <div><span>State</span><strong>{user.state || "-"}</strong></div>
+            <div><span>Country</span><strong>{user.country || "-"}</strong></div>
+            <div><span>Gender</span><strong>{user.gender || "-"}</strong></div>
+            <div><span>Languages</span><strong>{(user.languages || []).join(", ") || "-"}</strong></div>
+          </div>
+
+          <div className="about-block">
+            <span>About Me</span>
+            <p>{user.about_me || "-"}</p>
+          </div>
         </div>
       </div>
     </div>

@@ -5,7 +5,9 @@ import Signup from "./pages/Signup"
 import OwnerLogin from "./pages/OwnerLogin"
 import OwnerSignup from "./pages/OwnerSignup"
 import Profile from "./pages/Profile"
+import EditProfile from "./pages/EditProfile"
 import Preferences from "./pages/Preferences"
+import EditPreferences from "./pages/EditPreferences"
 import Favorites from "./pages/Favorites"
 import RestaurantDetails from "./pages/RestaurantDetails"
 import AddRestaurant from "./pages/AddRestaurant"
@@ -36,10 +38,26 @@ export default function App() {
           }
         />
         <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute role="user">
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/preferences"
           element={
             <ProtectedRoute role="user">
               <Preferences />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/preferences/edit"
+          element={
+            <ProtectedRoute role="user">
+              <EditPreferences />
             </ProtectedRoute>
           }
         />

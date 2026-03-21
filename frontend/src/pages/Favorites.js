@@ -6,11 +6,20 @@ import API from "../api/axios"
 export default function Favorites() {
   const [items, setItems] = useState([])
 
-  useEffect(() => {
+  const loadFavorites = () => {
     API.get("/users/me/favorites")
       .then((res) => setItems(res.data || []))
       .catch(() => setItems([]))
+  }
+
+  useEffect(() => {
+    loadFavorites()
   }, [])
+
+  const removeFavorite = async (restaurantId) => {
+    await API.delete(`/favorites/${restaurantId}`)
+    loadFavorites()
+  }
 
   return (
     <div className="subpage">
@@ -21,9 +30,15 @@ export default function Favorites() {
           <h2>Your Favorites</h2>
           <p>Places you saved for later</p>
         </div>
+
         <div className="restaurant-grid">
           {items.map((item) => (
-            <RestaurantCard key={item.restaurant_id} data={item} />
+            <div key={item.restaurant_id} className="favorite-card-wrap">
+              <RestaurantCard data={item} />
+              <button className="btn btn-primary full-width" onClick={() => removeFavorite(item.restaurant_id)}>
+                Remove from Favorites
+              </button>
+            </div>
           ))}
         </div>
       </div>

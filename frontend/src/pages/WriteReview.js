@@ -28,9 +28,21 @@ export default function WriteReview() {
         <div className="simple-card">
           <h2>Write Review</h2>
           <form className="auth-form" onSubmit={submit}>
-            <input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} placeholder="Rating" />
-            <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comment" />
-            <input value={photos} onChange={(e) => setPhotos(e.target.value)} placeholder="Photo URLs comma separated" />
+            <div className="field-group">
+              <label>Rating</label>
+              <input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
+            </div>
+
+            <div className="field-group">
+              <label>Comment</label>
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="4" />
+            </div>
+
+            <div className="field-group">
+              <label>Review Photo URLs</label>
+              <input value={photos} onChange={(e) => setPhotos(e.target.value)} placeholder="url1, url2" />
+            </div>
+
             <button type="submit" className="btn btn-primary full-width">Submit Review</button>
           </form>
         </div>

@@ -9,13 +9,15 @@ export default function EditReview() {
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState("")
   const [photos, setPhotos] = useState("")
+  const [restaurantId, setRestaurantId] = useState("")
 
   useEffect(() => {
     API.get("/users/me/history").then((res) => {
       const review = (res.data?.reviews || []).find((r) => String(r.review_id) === String(reviewId))
       if (review) {
-        setRating(review.rating)
+        setRating(review.rating || 5)
         setComment(review.comment || "")
+        setRestaurantId(review.restaurant_id)
       }
     })
   }, [reviewId])
@@ -27,7 +29,7 @@ export default function EditReview() {
       comment,
       photos: photos ? photos.split(",").map((x) => x.trim()).filter(Boolean) : []
     })
-    navigate("/")
+    navigate(`/restaurant/${restaurantId}`)
   }
 
   return (
@@ -38,9 +40,21 @@ export default function EditReview() {
         <div className="simple-card">
           <h2>Edit Review</h2>
           <form className="auth-form" onSubmit={submit}>
-            <input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
-            <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comment" />
-            <input value={photos} onChange={(e) => setPhotos(e.target.value)} placeholder="Photo URLs comma separated" />
+            <div className="field-group">
+              <label>Rating</label>
+              <input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
+            </div>
+
+            <div className="field-group">
+              <label>Comment</label>
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="4" />
+            </div>
+
+            <div className="field-group">
+              <label>Review Photo URLs</label>
+              <input value={photos} onChange={(e) => setPhotos(e.target.value)} placeholder="url1, url2" />
+            </div>
+
             <button type="submit" className="btn btn-primary full-width">Update Review</button>
           </form>
         </div>
