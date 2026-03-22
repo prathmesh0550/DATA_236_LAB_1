@@ -61,6 +61,7 @@ class Restaurant(Base):
     name = Column(String(200), nullable=False, index=True)
     cuisine_type = Column(String(100), nullable=True, index=True)
     city = Column(String(100), nullable=True, index=True)
+    zip_code = Column(String(15), nullable=True, index=True)
     address = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     hours = Column(Text, nullable=True)

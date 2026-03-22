@@ -18,7 +18,7 @@ def search_restaurants(
     cuisine: str | None = Query(default=None),
     keyword: str | None = Query(default=None),
     city: str | None = Query(default=None),
-    zip: str | None = Query(default=None),
+    zip_code: str | None = Query(default=None),
     price: str | None = Query(default=None),
     sort: str | None = Query(default="rating"),
 ):
@@ -30,10 +30,10 @@ def search_restaurants(
         q = q.filter(Restaurant.cuisine_type.ilike(f"%{cuisine}%"))
     if city:
         q = q.filter(Restaurant.city.ilike(f"%{city}%"))
-    if zip:
-        q = q.filter(Restaurant.zip.ilike(f"%{zip}%"))
+    if zip_code:
+        q = q.filter(Restaurant.zip_code.ilike(f"%{zip_code}%"))
     if price:
-        q = q.filter(Restaurant.price_tier == price)  # fixed: was Restaurant.price
+        q = q.filter(Restaurant.price_tier == price)
     if keyword:
         q = q.filter(or_(
             Restaurant.name.ilike(f"%{keyword}%"),
@@ -69,11 +69,12 @@ def create_restaurant(
         name=body.name,
         cuisine_type=body.cuisine_type,
         city=body.city,
+        zip_code=body.zip_code,
         address=body.address,
         description=body.description,
         hours=body.hours,
         contact_info=body.contact_info,
-        price_tier=body.price_tier,       # fixed: was missing
+        price_tier=body.price_tier,
         created_by_user_id=current_user.user_id,
     )
     db.add(restaurant)

@@ -102,31 +102,34 @@ class RestaurantCreateIn(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
+    zip: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
     price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
-
-
+ 
+ 
 class RestaurantUpdateIn(BaseModel):
     name: Optional[str] = None
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
+    zip: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
     contact_info: Optional[str] = None
     price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
-
-
+ 
+ 
 class RestaurantOut(BaseModel):
     restaurant_id: int
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
+    zip: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
@@ -137,32 +140,34 @@ class RestaurantOut(BaseModel):
     photos: Optional[List[str]] = None
     claimed_by_owner_id: Optional[int] = None
     created_by_user_id: Optional[int] = None
-
+ 
     class Config:
         from_attributes = True
-
-
+ 
+ 
 class RestaurantCardOut(BaseModel):
     restaurant_id: int
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
+    zip: Optional[str] = None
     avg_rating: float
     review_count: int
     price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
-
+ 
     class Config:
         from_attributes = True
-
-
+ 
+ 
 class RestaurantCard(BaseModel):
     restaurant_id: int
     name: str
-    cuisine_type: Optional[str]
-    city: Optional[str]
-    avg_rating: Optional[float]
-    review_count: Optional[int]
+    cuisine_type: Optional[str] = None
+    city: Optional[str] = None
+    zip: Optional[str] = None
+    avg_rating: Optional[float] = None
+    review_count: Optional[int] = None
     price_tier: Optional[str] = None
 
 class AddPhotosIn(BaseModel):
