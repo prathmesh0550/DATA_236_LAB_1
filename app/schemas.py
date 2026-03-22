@@ -102,7 +102,7 @@ class RestaurantCreateIn(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    zip: Optional[str] = None
+    zip_code: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
@@ -115,7 +115,7 @@ class RestaurantUpdateIn(BaseModel):
     name: Optional[str] = None
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    zip: Optional[str] = None
+    zip_code: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
@@ -129,7 +129,7 @@ class RestaurantOut(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    zip: Optional[str] = None
+    zip_code: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
     hours: Optional[str] = None
@@ -150,7 +150,7 @@ class RestaurantCardOut(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    zip: Optional[str] = None
+    zip_code: Optional[str] = None
     avg_rating: float
     review_count: int
     price_tier: Optional[str] = None
@@ -165,7 +165,7 @@ class RestaurantCard(BaseModel):
     name: str
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
-    zip: Optional[str] = None
+    zip_code: Optional[str] = None
     avg_rating: Optional[float] = None
     review_count: Optional[int] = None
     price_tier: Optional[str] = None

@@ -92,7 +92,7 @@ export default function RestaurantDetails() {
             <div className="details-meta">
               <span>{restaurant.cuisine_type || "Restaurant"}</span>
               <span>{restaurant.city || "City"}</span>
-              <span>{restaurant.zip || "No zip code"}</span>
+              <span>{restaurant.zip_code || "No zip code"}</span>
               <span>{restaurant.address || "No address"}</span>
               <span>{restaurant.avg_rating || 0}</span>
               <span>{restaurant.review_count || 0} reviews</span>
