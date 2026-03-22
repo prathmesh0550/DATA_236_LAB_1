@@ -55,7 +55,6 @@ class ParsedQuery(BaseModel):
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").strip()).lower()
 
-
 def _normalize_price(value: str) -> str:
     v = _norm(value)
     for tier, aliases in PRICE_MAP.items():
@@ -75,12 +74,57 @@ def _load_prefs(db: Session, user: User) -> Dict:
         "sort_preference": (getattr(row, "sort_preference", "") or "").strip(),
     }
 
-
 def _db_options(db: Session):
     rows = db.query(Restaurant).all()
     cuisines = sorted({(r.cuisine_type or "").strip() for r in rows if r.cuisine_type})
     cities = sorted({(r.city or "").strip() for r in rows if r.city})
     return cuisines, cities
+
+BEST_RATING_PHRASES = [
+    "best review", "best rated", "highest rated", "best rating",
+    "highest rating", "top rated", "which one is best",
+]
+MOST_REVIEWS_PHRASES = [
+    "most reviews", "most reviewed", "most popular",
+]
+PICK_ONE_PHRASES = [
+    "which one", "which is better", "pick one", "recommend one",
+    "which should i", "which would you",
+]
+
+def _is_simple_followup(message: str, history: str) -> bool:
+    """Only trigger for direct comparison questions with no new city/cuisine."""
+    if not history:
+        return False
+    lowered = _norm(message)
+    all_phrases = BEST_RATING_PHRASES + MOST_REVIEWS_PHRASES + PICK_ONE_PHRASES
+    return any(p in lowered for p in all_phrases)
+
+def _answer_followup(message: str, history: str) -> Optional[str]:
+    """Answer directly from history. Returns None if it cannot determine an answer."""
+    lowered = _norm(message)
+
+    name_rating = re.findall(r"([\w][\w\s&']+?)\s*\(([\d.]+)[★*]", history)
+
+    if not name_rating:
+        name_rating = re.findall(r"([\w][\w\s&']{2,40})\s+([\d.]+)\s*[★*]", history)
+
+    if not name_rating:
+        return None
+
+    if any(p in lowered for p in BEST_RATING_PHRASES):
+        best = max(name_rating, key=lambda x: float(x[1]))
+        return f"{best[0].strip()} has the best rating at {best[1]}★. Would you like more details?"
+
+    if any(p in lowered for p in MOST_REVIEWS_PHRASES):
+        names = [n.strip() for n, _ in name_rating]
+        return f"From the options shown: {", ".join(names[:3])}. I'd need full details to compare review counts."
+
+    if any(p in lowered for p in PICK_ONE_PHRASES):
+        top_name, top_rating = name_rating[0]
+        return f"I'd go with {top_name.strip()} ({top_rating}★) — it ranked highest in your search."
+
+    return None
 
 def _heuristic_parse(
     message: str, history: str, prefs: Dict,
@@ -155,12 +199,12 @@ Rules:
     try:
         llm = ChatOllama(model=os.getenv("OLLAMA_MODEL", "llama3"), temperature=0)
         raw = (prompt | llm).invoke({
-            "prefs":    json.dumps(prefs),
+            "prefs": json.dumps(prefs),
             "cuisines": ", ".join(cuisines),
-            "cities":   ", ".join(cities),
-            "history":  history or "None",
-            "message":  message,
-            "fmt":      parser.get_format_instructions(),
+            "cities": ", ".join(cities),
+            "history": history or "None",
+            "message": message,
+            "fmt": parser.get_format_instructions(),
         })
         parsed = parser.parse(getattr(raw, "content", ""))
         if not parsed.cuisine and prefs.get("cuisines"):
@@ -177,7 +221,6 @@ def _search(db: Session, q: ParsedQuery, limit: int = 40) -> List[Restaurant]:
     if q.city: query = query.filter(Restaurant.city.ilike(f"%{q.city}%"))
     if q.min_rating: query = query.filter(Restaurant.avg_rating >= q.min_rating)
     return query.limit(limit).all()
-
 
 def _score(r: Restaurant, q: ParsedQuery, prefs: Dict) -> float:
     blob = _norm(" ".join(filter(None, [
@@ -205,11 +248,10 @@ def _score(r: Restaurant, q: ParsedQuery, prefs: Dict) -> float:
     if pref_price and r_price == pref_price: score += 4
 
     sort = _norm(prefs.get("sort_preference", ""))
-    if sort == "rating":       score += rating * 3
+    if sort == "rating": score += rating * 3
     elif sort == "popularity": score += min(reviews, 300) * 0.05
 
     return score
-
 
 def _rank(restaurants: List[Restaurant], q: ParsedQuery, prefs: Dict) -> List[Restaurant]:
     return sorted(
@@ -232,7 +274,6 @@ def _reason(r: Restaurant, q: ParsedQuery) -> str:
     if q.dietary and q.dietary[0].lower() in desc: parts.append(f"supports {q.dietary[0]}")
     return ", ".join(parts) or "highly rated and relevant to your search"
 
-
 def _build_reply(q: ParsedQuery, ranked: List[Restaurant], web_note: str) -> str:
     if not ranked:
         msg = "I couldn't find a strong match. Try broadening your cuisine, city, price, or rating."
@@ -253,7 +294,6 @@ def _build_reply(q: ParsedQuery, ranked: List[Restaurant], web_note: str) -> str
     reply = header + "\n".join(lines)
     return f"{reply}\n\n{web_note}" if web_note else reply
 
-
 def _to_cards(restaurants: List[Restaurant]) -> List[RestaurantCard]:
     return [
         RestaurantCard(
@@ -267,7 +307,6 @@ def _to_cards(restaurants: List[Restaurant]) -> List[RestaurantCard]:
         )
         for r in restaurants[:5]
     ]
-
 
 def _tavily(query: str) -> str:
     key = os.getenv("TAVILY_API_KEY", "").strip()
@@ -311,6 +350,14 @@ async def chat(
         for m in (request.conversation_history or [])[-8:]
     )
 
+    msg_lower = _norm(message)
+    has_new_cuisine = any(c.lower() in msg_lower for c in cuisines if c) or any(kw in msg_lower for kw in CUISINE_KW)
+    has_new_city = any(c.lower() in msg_lower for c in cities if c)
+    if not (has_new_cuisine and has_new_city) and _is_simple_followup(message, history):
+        answer = _answer_followup(message, history)
+        if answer:
+            return ChatResponse(reply=answer, restaurants=[])
+
     parsed = _parse_query(message, history, prefs, cuisines, cities)
 
     if parsed.wants_options:
@@ -333,22 +380,3 @@ async def chat(
         reply=_build_reply(parsed, ranked[:5], web_note),
         restaurants=_to_cards(ranked),
     )
-
-
-@router.get("/debug")
-def debug_search(
-    message: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    prefs = _load_prefs(db, current_user)
-    cuisines, cities = _db_options(db)
-    parsed = _parse_query(message, "", prefs, cuisines, cities)
-    candidates = _search(db, parsed)
-    return {
-        "parsed": parsed.model_dump(),
-        "prefs": prefs,
-        "cuisines": cuisines,
-        "cities": cities,
-        "candidates": [{"id": r.restaurant_id, "name": r.name, "city": r.city, "cuisine": r.cuisine_type} for r in candidates],
-    }

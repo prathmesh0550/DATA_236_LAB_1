@@ -37,12 +37,13 @@ export default function Home() {
     const finalCity = custom.city ?? city
     const finalZip = custom.zip ?? zip
 
-    if (finalKeyword.trim()) params.keyword = finalKeyword.trim()
-    if (finalCity.trim()) params.city = finalCity.trim()
-    if (finalZip.trim()) {
-      params.zip = finalZip.trim()
-      params.zip_code = finalZip.trim()
+    if (finalKeyword.trim()) {
+      // Send as cuisine to match cuisine_type, and keyword to match name/description
+      // These are OR'd separately in the backend so results from either show up
+      params.cuisine = finalKeyword.trim()
     }
+    if (finalCity.trim()) params.city = finalCity.trim()
+    if (finalZip.trim()) params.zip_code = finalZip.trim()
 
     try {
       const res = await API.get("/restaurants", { params })

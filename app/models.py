@@ -1,6 +1,5 @@
 from __future__ import annotations
-
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey, Text, Float, UniqueConstraint)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import JSON
@@ -86,7 +85,7 @@ class Review(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
-    review_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    review_date = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     photos = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     user = relationship("User", back_populates="reviews")

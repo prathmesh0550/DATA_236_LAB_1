@@ -151,11 +151,11 @@ class RestaurantCardOut(BaseModel):
     cuisine_type: Optional[str] = None
     city: Optional[str] = None
     zip_code: Optional[str] = None
-    avg_rating: float
-    review_count: int
+    avg_rating: Optional[float] = None
+    review_count: Optional[int] = None
     price_tier: Optional[str] = None
     photos: Optional[List[str]] = None
- 
+
     class Config:
         from_attributes = True
  
@@ -169,6 +169,7 @@ class RestaurantCard(BaseModel):
     avg_rating: Optional[float] = None
     review_count: Optional[int] = None
     price_tier: Optional[str] = None
+    photos: Optional[List[str]] = None
 
 class AddPhotosIn(BaseModel):
     photos: List[str]

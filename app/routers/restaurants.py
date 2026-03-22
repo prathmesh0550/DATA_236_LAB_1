@@ -26,19 +26,20 @@ def search_restaurants(
 
     if name:
         q = q.filter(Restaurant.name.ilike(f"%{name}%"))
-    if cuisine:
-        q = q.filter(Restaurant.cuisine_type.ilike(f"%{cuisine}%"))
     if city:
         q = q.filter(Restaurant.city.ilike(f"%{city}%"))
     if zip_code:
         q = q.filter(Restaurant.zip_code.ilike(f"%{zip_code}%"))
     if price:
         q = q.filter(Restaurant.price_tier == price)
-    if keyword:
+
+    if cuisine or keyword:
+        search_term = cuisine or keyword
         q = q.filter(or_(
-            Restaurant.name.ilike(f"%{keyword}%"),
-            Restaurant.description.ilike(f"%{keyword}%"),
-            Restaurant.contact_info.ilike(f"%{keyword}%"),
+            Restaurant.cuisine_type.ilike(f"%{search_term}%"),
+            Restaurant.name.ilike(f"%{search_term}%"),
+            Restaurant.description.ilike(f"%{search_term}%"),
+            Restaurant.contact_info.ilike(f"%{search_term}%"),
         ))
 
     if sort == "new":
@@ -76,6 +77,7 @@ def create_restaurant(
         contact_info=body.contact_info,
         price_tier=body.price_tier,
         created_by_user_id=current_user.user_id,
+        photos=body.photos if body.photos else [],
     )
     db.add(restaurant)
     db.commit()

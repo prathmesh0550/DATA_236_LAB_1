@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
+from datetime import datetime, timezone
 from app.db import get_db
 from app.models import Review, Restaurant, User
 from app.schemas import ReviewCreateIn, ReviewUpdateIn, ReviewOut
@@ -78,6 +78,7 @@ def create_review(
         rating=body.rating,
         comment=body.comment,
         photos=body.photos,
+        review_date=datetime.now(timezone.utc),
     )
 
     db.add(review)

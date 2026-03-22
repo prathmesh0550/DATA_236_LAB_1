@@ -65,7 +65,15 @@ def upsert_preferences(
         pref = UserPreference(user_id=current_user.user_id)
         db.add(pref)
 
-    for k, v in body.model_dump(exclude_unset=True).items():
+    data = body.model_dump(exclude_unset=True)
+
+    if "cuisines" in data and data["cuisines"]:
+        normalized = []
+        for c in data["cuisines"]:
+            normalized.extend([x.strip() for x in c.split(",") if x.strip()])
+        data["cuisines"] = normalized
+
+    for k, v in data.items():
         setattr(pref, k, v)
 
     db.commit()

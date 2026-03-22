@@ -6,7 +6,16 @@ export default function ReviewCard({ review, canEdit, onDelete }) {
       <div className="review-card-top">
         <div>
           <h4>Rating: {review.rating}/5</h4>
-          <span>{new Date(review.review_date).toLocaleString()}</span>
+          <span>
+          {new Date(review.review_date + "Z").toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
         </div>
       </div>
 

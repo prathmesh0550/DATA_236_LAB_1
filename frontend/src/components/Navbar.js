@@ -5,7 +5,9 @@ import API from "../api/axios"
 export default function Navbar() {
   const navigate = useNavigate()
   const [role, setRole] = useState(localStorage.getItem("role") || "")
-  const [displayName, setDisplayName] = useState(localStorage.getItem("displayName") || "")
+  const [displayName, setDisplayName] = useState(
+    localStorage.getItem("displayName") || ""
+  )
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -35,20 +37,30 @@ export default function Navbar() {
       })
   }, [])
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const endpoint =
+        role === "owner" ? "/auth/owner/logout" : "/auth/user/logout"
+
+      await API.post(endpoint)
+    } catch {
+      // Ignore backend logout errors and still clear client auth
+    }
+
     localStorage.removeItem("token")
     localStorage.removeItem("role")
     localStorage.removeItem("displayName")
     setRole("")
     setDisplayName("")
-    navigate("/")
-    window.location.reload()
+    window.location.href = "/"
   }
 
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <Link to="/" className="brand">yelp</Link>
+        <Link to="/" className="brand">
+          yelp
+        </Link>
 
         <div className="topbar-links">
           <a href="/#activity">Popular Restaurants</a>
@@ -60,27 +72,49 @@ export default function Navbar() {
 
           {role === "owner" && <Link to="/owner/dashboard">Owner Dashboard</Link>}
           {role === "owner" && <Link to="/owner/restaurants">My Restaurants</Link>}
-          {role === "owner" && <Link to="/owner/add-restaurant">Add Restaurant</Link>}
+          {role === "owner" && (
+            <Link to="/owner/add-restaurant">Add Restaurant</Link>
+          )}
         </div>
 
         <div className="topbar-actions">
           {role ? (
             <>
               <span className="user-badge">
-                {role === "owner" ? `Owner: ${displayName || "Owner"}` : `Hi, ${displayName || "User"}`}
+                {role === "owner"
+                  ? `Owner: ${displayName || "Owner"}`
+                  : `Hi, ${displayName || "User"}`}
               </span>
 
-              {role === "user" && <Link to="/profile" className="btn btn-ghost">Profile</Link>}
-              {role === "user" && <Link to="/add-restaurant" className="btn btn-ghost">Add Restaurant</Link>}
+              {role === "user" && (
+                <Link to="/profile" className="btn btn-ghost">
+                  Profile
+                </Link>
+              )}
+              {role === "user" && (
+                <Link to="/add-restaurant" className="btn btn-ghost">
+                  Add Restaurant
+                </Link>
+              )}
 
-              <button className="btn btn-primary" onClick={logout}>Logout</button>
+              <button className="btn btn-primary" onClick={logout}>
+                Logout
+              </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="btn btn-ghost">User Login</Link>
-              <Link to="/signup" className="btn btn-primary">User Sign Up</Link>
-              <Link to="/owner/login" className="btn btn-ghost">Owner Login</Link>
-              <Link to="/owner/signup" className="btn btn-primary">Owner Sign Up</Link>
+              <Link to="/login" className="btn btn-ghost">
+                User Login
+              </Link>
+              <Link to="/signup" className="btn btn-primary">
+                User Sign Up
+              </Link>
+              <Link to="/owner/login" className="btn btn-ghost">
+                Owner Login
+              </Link>
+              <Link to="/owner/signup" className="btn btn-primary">
+                Owner Sign Up
+              </Link>
             </>
           )}
         </div>
