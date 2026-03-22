@@ -23,20 +23,71 @@ const heroBackground =
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([])
+  const [keywordInput, setKeywordInput] = useState("")
+  const [cityInput, setCityInput] = useState("")
+  const [zipInput, setZipInput] = useState("")
   const [keyword, setKeyword] = useState("")
   const [city, setCity] = useState("")
   const [zip, setZip] = useState("")
 
-  useEffect(() => {
+  const loadRestaurants = async (custom = {}) => {
     const params = {}
-    if (keyword.trim()) params.keyword = keyword.trim()
-    if (city.trim()) params.city = city.trim()
-    if (zip.trim()) params.zip = zip.trim()
 
-    API.get("/restaurants", { params })
-      .then((res) => setRestaurants(res.data || []))
-      .catch(() => setRestaurants([]))
-  }, [keyword, city, zip])
+    const finalKeyword = custom.keyword ?? keyword
+    const finalCity = custom.city ?? city
+    const finalZip = custom.zip ?? zip
+
+    if (finalKeyword.trim()) params.keyword = finalKeyword.trim()
+    if (finalCity.trim()) params.city = finalCity.trim()
+    if (finalZip.trim()) {
+      params.zip = finalZip.trim()
+      params.zip_code = finalZip.trim()
+    }
+
+    try {
+      const res = await API.get("/restaurants", { params })
+      setRestaurants(res.data || [])
+    } catch {
+      setRestaurants([])
+    }
+  }
+
+  useEffect(() => {
+    loadRestaurants()
+  }, [])
+
+  const handleSearch = () => {
+    setKeyword(keywordInput)
+    setCity(cityInput)
+    setZip(zipInput)
+    loadRestaurants({
+      keyword: keywordInput,
+      city: cityInput,
+      zip: zipInput
+    })
+  }
+
+  const handleCitySelect = (selectedCity) => {
+    setCityInput(selectedCity)
+    setZipInput("")
+    setCity(selectedCity)
+    setZip("")
+    loadRestaurants({
+      keyword: keywordInput,
+      city: selectedCity,
+      zip: ""
+    })
+  }
+
+  const handleTagSearch = (value) => {
+    setKeywordInput(value)
+    setKeyword(value)
+    loadRestaurants({
+      keyword: value,
+      city: cityInput,
+      zip: zipInput
+    })
+  }
 
   const featured = restaurants.slice(0, 6)
 
@@ -59,8 +110,8 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="pizza, pasta, coffee, family friendly"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
               />
             </div>
 
@@ -71,8 +122,8 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="enter city"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                value={cityInput}
+                onChange={(e) => setCityInput(e.target.value)}
               />
             </div>
 
@@ -83,20 +134,20 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="enter zip code"
-                value={zip}
-                onChange={(e) => setZip(e.target.value)}
+                value={zipInput}
+                onChange={(e) => setZipInput(e.target.value)}
               />
             </div>
 
-            <button className="search-button">Search</button>
+            <button className="search-button" onClick={handleSearch}>Search</button>
           </div>
 
           <div className="hero-tags">
-            <button className="hero-tag-btn" onClick={() => setKeyword("Pizza")}>Pizza</button>
-            <button className="hero-tag-btn" onClick={() => setKeyword("Indian")}>Indian</button>
-            <button className="hero-tag-btn" onClick={() => setKeyword("Chinese")}>Chinese</button>
-            <button className="hero-tag-btn" onClick={() => setKeyword("Mexican")}>Mexican</button>
-            <button className="hero-tag-btn" onClick={() => setKeyword("Italian")}>Italian</button>
+            <button className="hero-tag-btn" onClick={() => handleTagSearch("Pizza")}>Pizza</button>
+            <button className="hero-tag-btn" onClick={() => handleTagSearch("Indian")}>Indian</button>
+            <button className="hero-tag-btn" onClick={() => handleTagSearch("Chinese")}>Chinese</button>
+            <button className="hero-tag-btn" onClick={() => handleTagSearch("Mexican")}>Mexican</button>
+            <button className="hero-tag-btn" onClick={() => handleTagSearch("Italian")}>Italian</button>
           </div>
         </div>
       </section>
@@ -142,11 +193,8 @@ export default function Home() {
             {cities.map((item) => (
               <button
                 key={item}
-                className={`city-tag ${city === item ? "active-city" : ""}`}
-                onClick={() => {
-                  setCity(item)
-                  setZip("")
-                }}
+                className={`city-tag ${cityInput === item ? "active-city" : ""}`}
+                onClick={() => handleCitySelect(item)}
               >
                 {item}
               </button>

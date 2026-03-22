@@ -12,6 +12,7 @@ import Favorites from "./pages/Favorites"
 import History from "./pages/History"
 import RestaurantDetails from "./pages/RestaurantDetails"
 import AddRestaurant from "./pages/AddRestaurant"
+import OwnerAddRestaurant from "./pages/OwnerAddRestaurant"
 import WriteReview from "./pages/WriteReview"
 import EditReview from "./pages/EditReview"
 import OwnerDashboard from "./pages/OwnerDashboard"
@@ -39,6 +40,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/profile/edit"
           element={
@@ -47,6 +49,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/preferences"
           element={
@@ -55,6 +58,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/preferences/edit"
           element={
@@ -63,6 +67,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/favorites"
           element={
@@ -71,6 +76,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/history"
           element={
@@ -79,7 +85,9 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route path="/restaurant/:id" element={<RestaurantDetails />} />
+
         <Route
           path="/add-restaurant"
           element={
@@ -88,6 +96,16 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/owner/add-restaurant"
+          element={
+            <ProtectedRoute role="owner">
+              <OwnerAddRestaurant />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/review/:id"
           element={
@@ -96,6 +114,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/edit-review/:reviewId"
           element={
@@ -104,6 +123,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/owner/dashboard"
           element={
@@ -112,6 +132,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/owner/restaurants"
           element={
@@ -120,6 +141,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/owner/restaurants/:id/reviews"
           element={
@@ -128,6 +150,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/owner/restaurants/:id/edit"
           element={
@@ -137,6 +160,7 @@ export default function App() {
           }
         />
       </Routes>
+
       <Chatbot />
     </BrowserRouter>
   )

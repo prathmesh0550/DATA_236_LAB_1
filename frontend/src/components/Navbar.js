@@ -53,11 +53,14 @@ export default function Navbar() {
         <div className="topbar-links">
           <a href="/#activity">Popular Restaurants</a>
           <a href="/#cities">Cities</a>
+
           {role === "user" && <Link to="/favorites">Favorites</Link>}
           {role === "user" && <Link to="/history">History</Link>}
           {role === "user" && <Link to="/preferences">Preferences</Link>}
+
           {role === "owner" && <Link to="/owner/dashboard">Owner Dashboard</Link>}
           {role === "owner" && <Link to="/owner/restaurants">My Restaurants</Link>}
+          {role === "owner" && <Link to="/owner/add-restaurant">Add Restaurant</Link>}
         </div>
 
         <div className="topbar-actions">
@@ -66,8 +69,10 @@ export default function Navbar() {
               <span className="user-badge">
                 {role === "owner" ? `Owner: ${displayName || "Owner"}` : `Hi, ${displayName || "User"}`}
               </span>
+
               {role === "user" && <Link to="/profile" className="btn btn-ghost">Profile</Link>}
               {role === "user" && <Link to="/add-restaurant" className="btn btn-ghost">Add Restaurant</Link>}
+
               <button className="btn btn-primary" onClick={logout}>Logout</button>
             </>
           ) : (

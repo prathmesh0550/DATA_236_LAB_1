@@ -36,6 +36,10 @@ textarea {
   margin: 0 auto;
 }
 
+.page-narrow {
+  max-width: 1080px;
+}
+
 .topbar {
   position: absolute;
   inset: 0 0 auto 0;
@@ -209,7 +213,7 @@ textarea {
   margin-top: 34px;
   background: rgba(255, 255, 255, 0.96);
   border-radius: 24px;
-  width: min(980px, 100%);
+  width: min(1140px, 100%);
   display: grid;
   align-items: center;
   padding: 10px;
@@ -273,7 +277,6 @@ textarea {
   margin-top: 22px;
 }
 
-.hero-tags span,
 .hero-tag-btn {
   padding: 10px 16px;
   border-radius: 999px;
@@ -484,7 +487,7 @@ textarea {
 
 .auth-form {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   margin-top: 24px;
 }
 
@@ -542,14 +545,23 @@ textarea {
 }
 
 .simple-card,
-.details-card {
+.details-card,
+.view-card {
   background: #ffffff;
   border-radius: 28px;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
 }
 
 .simple-card {
-  padding: 30px;
+  padding: 36px;
+}
+
+.view-card {
+  padding: 40px;
+}
+
+.large-view-card {
+  min-height: 420px;
 }
 
 .details-card {
@@ -648,6 +660,118 @@ textarea {
   color: #374151;
 }
 
+.view-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.view-card-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-view-top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.spacious-profile-top {
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 36px;
+}
+
+.profile-photo {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 6px solid #f3f4f6;
+}
+
+.large-profile-photo {
+  width: 180px;
+  height: 180px;
+}
+
+.profile-main-info h3 {
+  margin: 0 0 8px;
+  font-size: 34px;
+}
+
+.profile-main-info p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 18px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.spacious-info-grid {
+  gap: 22px;
+}
+
+.info-grid div {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 20px;
+  min-height: 96px;
+}
+
+.info-grid span {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.info-grid strong {
+  font-size: 17px;
+  color: #191919;
+  line-height: 1.5;
+}
+
+.about-block {
+  margin-top: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.spacious-about-block {
+  margin-top: 26px;
+  padding: 24px;
+}
+
+.about-block span {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.about-block p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.favorite-card-wrap {
+  display: grid;
+  gap: 12px;
+}
+
 .restaurant-photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -668,9 +792,44 @@ textarea {
   border-color: #e00707;
 }
 
-.favorite-card-wrap {
+.history-section {
+  margin-top: 30px;
+}
+
+.history-section h3 {
+  margin: 0 0 14px;
+  font-size: 24px;
+}
+
+.history-list {
   display: grid;
+  gap: 18px;
+}
+
+.history-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.history-card span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.history-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.history-actions {
+  display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .chatbot-shell {
@@ -888,11 +1047,14 @@ textarea {
     font-size: 46px;
   }
 
-  .restaurant-grid {
+  .restaurant-grid,
+  .info-grid {
     grid-template-columns: 1fr;
   }
 
-  .restaurant-card-actions {
+  .restaurant-card-actions,
+  .history-actions,
+  .view-card-actions {
     flex-direction: column;
   }
 
@@ -922,5 +1084,26 @@ textarea {
     width: 64px;
     height: 64px;
     font-size: 16px;
+  }
+
+  .profile-view-top,
+  .spacious-profile-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .view-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .large-profile-photo {
+    width: 140px;
+    height: 140px;
+  }
+
+  .view-card,
+  .simple-card {
+    padding: 24px;
   }
 }
