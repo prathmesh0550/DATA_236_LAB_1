@@ -73,7 +73,7 @@ def upsert_preferences(
     return pref
 
 
-@router.get("/users/me/history", response_model=UserHistoryOut)
+@router.get("/me/history", response_model=UserHistoryOut)
 def get_user_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -111,7 +111,11 @@ def get_user_history(
             name=r.name,
             cuisine_type=r.cuisine_type,
             city=r.city,
-            created_at=getattr(r, "created_at", None),
+            price_tier=r.price_tier,
+            avg_rating=r.avg_rating,
+            review_count=r.review_count,
+            photos=r.photos if r.photos else [],
+            created_at=r.created_at,
         )
         for r in restaurants_added
     ]

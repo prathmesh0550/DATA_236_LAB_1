@@ -424,8 +424,11 @@ textarea {
 
 .restaurant-card-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 22px;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 .city-tags {

@@ -1,31 +1,50 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import Navbar from "../components/Navbar"
+import RestaurantCard from "../components/RestaurantCard"
 import API from "../api/axios"
 
 export default function History() {
   const [reviews, setReviews] = useState([])
-  const [favorites, setFavorites] = useState([])
+  const [restaurantsAdded, setRestaurantsAdded] = useState([])
+  const [deletingReviewId, setDeletingReviewId] = useState(null)
 
   useEffect(() => {
-    API.get("/users/me/history")
-      .then((res) => {
+    const loadHistory = async () => {
+      try {
+        const res = await API.get("/users/me/history")
         const data = res.data || {}
 
-        if (Array.isArray(data)) {
-          setReviews(data)
-          setFavorites([])
-          return
-        }
-
         setReviews(Array.isArray(data.reviews) ? data.reviews : [])
-        setFavorites(Array.isArray(data.favorites) ? data.favorites : [])
-      })
-      .catch(() => {
+        setRestaurantsAdded(
+          Array.isArray(data.restaurants_added) ? data.restaurants_added : []
+        )
+      } catch {
         setReviews([])
-        setFavorites([])
-      })
+        setRestaurantsAdded([])
+      }
+    }
+
+    loadHistory()
   }, [])
+
+  const handleDeleteReview = async (reviewId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this review?"
+    )
+
+    if (!confirmed) return
+
+    try {
+      setDeletingReviewId(reviewId)
+      await API.delete(`/reviews/${reviewId}`)
+      setReviews((prev) => prev.filter((review) => review.review_id !== reviewId))
+    } catch {
+      alert("Failed to delete review.")
+    } finally {
+      setDeletingReviewId(null)
+    }
+  }
 
   return (
     <div className="subpage">
@@ -36,7 +55,9 @@ export default function History() {
         <div className="view-card large-view-card">
           <div className="view-card-header">
             <h2>History</h2>
-            <Link to="/profile" className="btn btn-outline">Back to Profile</Link>
+            <Link to="/profile" className="btn btn-outline">
+              Back to Profile
+            </Link>
           </div>
 
           <div className="history-section">
@@ -46,13 +67,30 @@ export default function History() {
 
               {reviews.map((review) => (
                 <div key={review.review_id} className="history-card">
-                  <strong>Restaurant #{review.restaurant_id}</strong>
-                  <span>{review.review_date ? new Date(review.review_date).toLocaleString() : ""}</span>
+                  <strong>
+                    {review.restaurant_name ||
+                      `Restaurant #${review.restaurant_id}`}
+                  </strong>
+
+                  <span>{review.review_date ? new Date(review.review_date).toLocaleString(): ""}</span>
+
                   <p>Rating: {review.rating}/5</p>
                   <p>{review.comment || "No comment"}</p>
+
                   <div className="history-actions">
-                    <Link to={`/restaurant/${review.restaurant_id}`} className="btn btn-outline">View Restaurant</Link>
-                    <Link to={`/edit-review/${review.review_id}`} className="btn btn-primary">Edit Review</Link>
+                    <Link to={`/restaurant/${review.restaurant_id}`} className="btn btn-outline"> View Restaurant</Link>
+                    <Link to={`/edit-review/${review.review_id}`} className="btn btn-primary"> Edit Review</Link>
+
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteReview(review.review_id)}
+                      disabled={deletingReviewId === review.review_id}
+                    >
+                      {deletingReviewId === review.review_id
+                        ? "Deleting..."
+                        : "Delete Review"}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -60,18 +98,18 @@ export default function History() {
           </div>
 
           <div className="history-section">
-            <h3>Your Favorites</h3>
-            <div className="history-list">
-              {favorites.length === 0 && <p>No favorites yet.</p>}
+            <h3>Your Added Restaurants</h3>
 
-              {favorites.map((fav, index) => (
-                <div key={fav.restaurant_id || index} className="history-card">
-                  <strong>Restaurant #{fav.restaurant_id}</strong>
-                  <span>{fav.created_at ? new Date(fav.created_at).toLocaleString() : ""}</span>
-                  <div className="history-actions">
-                    <Link to={`/restaurant/${fav.restaurant_id}`} className="btn btn-outline">View Restaurant</Link>
-                  </div>
-                </div>
+            {restaurantsAdded.length === 0 && (
+              <p>No restaurants added yet.</p>
+            )}
+
+            <div className="history-list">
+              {restaurantsAdded.map((restaurant) => (
+                <RestaurantCard
+                  key={restaurant.restaurant_id}
+                  data={restaurant}
+                />
               ))}
             </div>
           </div>

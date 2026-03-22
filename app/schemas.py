@@ -213,8 +213,12 @@ class UserHistoryReviewOut(BaseModel):
 class UserHistoryRestaurantOut(BaseModel):
     restaurant_id: int
     name: str
-    cuisine_type: str
-    city: str
+    cuisine_type: str | None = None
+    city: str | None = None
+    price_tier: str | None = None
+    avg_rating: float | None = 0.0
+    review_count: int | None = 0
+    photos: list[str] = []
     created_at: datetime | None = None
 
     class Config:
