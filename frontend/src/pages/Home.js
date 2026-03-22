@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Navbar from "../components/Navbar"
 import RestaurantCard from "../components/RestaurantCard"
 import API from "../api/axios"
@@ -25,18 +25,20 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState([])
   const [keyword, setKeyword] = useState("")
   const [city, setCity] = useState("")
+  const [zip, setZip] = useState("")
 
   useEffect(() => {
     const params = {}
     if (keyword.trim()) params.keyword = keyword.trim()
     if (city.trim()) params.city = city.trim()
+    if (zip.trim()) params.zip = zip.trim()
 
     API.get("/restaurants", { params })
       .then((res) => setRestaurants(res.data || []))
       .catch(() => setRestaurants([]))
-  }, [keyword, city])
+  }, [keyword, city, zip])
 
-  const featured = useMemo(() => restaurants.slice(0, 6), [restaurants])
+  const featured = restaurants.slice(0, 6)
 
   return (
     <div className="page-shell">
@@ -51,7 +53,7 @@ export default function Home() {
             <p>Search top-rated restaurants, explore featured dining spots, and discover places people love.</p>
           </div>
 
-          <div className="search-panel">
+          <div className="search-panel search-panel-zip">
             <div className="search-field-group">
               <label>Restaurant or Keyword</label>
               <input
@@ -71,6 +73,18 @@ export default function Home() {
                 placeholder="enter city"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+
+            <div className="search-divider"></div>
+
+            <div className="search-field-group">
+              <label>Zip Code</label>
+              <input
+                type="text"
+                placeholder="enter zip code"
+                value={zip}
+                onChange={(e) => setZip(e.target.value)}
               />
             </div>
 
@@ -129,7 +143,10 @@ export default function Home() {
               <button
                 key={item}
                 className={`city-tag ${city === item ? "active-city" : ""}`}
-                onClick={() => setCity(item)}
+                onClick={() => {
+                  setCity(item)
+                  setZip("")
+                }}
               >
                 {item}
               </button>
