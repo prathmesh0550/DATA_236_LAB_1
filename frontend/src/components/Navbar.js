@@ -54,6 +54,7 @@ export default function Navbar() {
           <a href="/#activity">Popular Restaurants</a>
           <a href="/#cities">Cities</a>
           {role === "user" && <Link to="/favorites">Favorites</Link>}
+          {role === "user" && <Link to="/history">History</Link>}
           {role === "user" && <Link to="/preferences">Preferences</Link>}
           {role === "owner" && <Link to="/owner/dashboard">Owner Dashboard</Link>}
           {role === "owner" && <Link to="/owner/restaurants">My Restaurants</Link>}

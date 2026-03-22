@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 
-export default function ReviewCard({ review, isOwner, onDelete }) {
+export default function ReviewCard({ review, canEdit, onDelete }) {
   return (
     <div className="review-card">
       <div className="review-card-top">
@@ -20,7 +20,7 @@ export default function ReviewCard({ review, isOwner, onDelete }) {
         </div>
       )}
 
-      {isOwner && (
+      {canEdit && (
         <div className="review-card-actions">
           <Link to={`/edit-review/${review.review_id}`} className="btn btn-outline">Edit</Link>
           <button className="btn btn-primary" onClick={() => onDelete(review.review_id)}>Delete</button>

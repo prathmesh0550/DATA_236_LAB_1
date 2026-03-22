@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import ReviewCard from "../components/ReviewCard"
@@ -33,6 +33,10 @@ export default function RestaurantDetails() {
     loadData()
   }, [id])
 
+  const myReviewIds = useMemo(() => {
+    return new Set((history.reviews || []).map((r) => r.review_id))
+  }, [history])
+
   const deleteOwnReview = async (reviewId) => {
     const confirmed = window.confirm("Are you sure you want to delete review?")
     if (!confirmed) return
@@ -50,8 +54,6 @@ export default function RestaurantDetails() {
     alert("Restaurant claimed")
     loadData()
   }
-
-  const myReviewIds = new Set((history.reviews || []).map((r) => r.review_id))
 
   if (!restaurant) return null
 
@@ -91,10 +93,7 @@ export default function RestaurantDetails() {
               <span>{restaurant.cuisine_type || "Restaurant"}</span>
               <span>{restaurant.city || "City"}</span>
               <span>{restaurant.address || "No address"}</span>
-              <span>{restaurant.hours || "Hours unavailable"}</span>
-              <span>{restaurant.contact_info || "No contact info"}</span>
-              {restaurant.price_tier && <span>{restaurant.price_tier}</span>}
-              <span>{Number(restaurant.avg_rating || 0).toFixed(1)} ★</span>
+              <span>{restaurant.avg_rating || 0}</span>
               <span>{restaurant.review_count || 0} reviews</span>
             </div>
 
@@ -126,7 +125,7 @@ export default function RestaurantDetails() {
             <ReviewCard
               key={review.review_id}
               review={review}
-              isOwner={myReviewIds.has(review.review_id)}
+              canEdit={role === "user" && myReviewIds.has(review.review_id)}
               onDelete={deleteOwnReview}
             />
           ))}

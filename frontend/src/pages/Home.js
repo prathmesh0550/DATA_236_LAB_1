@@ -23,25 +23,20 @@ const heroBackground =
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([])
-  const [search, setSearch] = useState("")
+  const [keyword, setKeyword] = useState("")
   const [city, setCity] = useState("")
 
   useEffect(() => {
-    API.get("/restaurants")
+    const params = {}
+    if (keyword.trim()) params.keyword = keyword.trim()
+    if (city.trim()) params.city = city.trim()
+
+    API.get("/restaurants", { params })
       .then((res) => setRestaurants(res.data || []))
       .catch(() => setRestaurants([]))
-  }, [])
+  }, [keyword, city])
 
-  const filtered = useMemo(() => {
-    return restaurants.filter((r) => {
-      const q = search.toLowerCase()
-      const matchText =
-        (r.name || "").toLowerCase().includes(q) ||
-        (r.cuisine_type || "").toLowerCase().includes(q)
-      const matchCity = city ? (r.city || "").toLowerCase().includes(city.toLowerCase()) : true
-      return matchText && matchCity
-    })
-  }, [restaurants, search, city])
+  const featured = useMemo(() => restaurants.slice(0, 6), [restaurants])
 
   return (
     <div className="page-shell">
@@ -58,12 +53,12 @@ export default function Home() {
 
           <div className="search-panel">
             <div className="search-field-group">
-              <label>Restaurant or Cuisine</label>
+              <label>Restaurant or Keyword</label>
               <input
                 type="text"
-                placeholder="pizza, sushi, burgers, italian"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                placeholder="pizza, pasta, coffee, family friendly"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
 
@@ -83,11 +78,11 @@ export default function Home() {
           </div>
 
           <div className="hero-tags">
-            <span>Pizza</span>
-            <span>Indian</span>
-            <span>Chinese</span>
-            <span>Mexican</span>
-            <span>Italian</span>
+            <button className="hero-tag-btn" onClick={() => setKeyword("Pizza")}>Pizza</button>
+            <button className="hero-tag-btn" onClick={() => setKeyword("Indian")}>Indian</button>
+            <button className="hero-tag-btn" onClick={() => setKeyword("Chinese")}>Chinese</button>
+            <button className="hero-tag-btn" onClick={() => setKeyword("Mexican")}>Mexican</button>
+            <button className="hero-tag-btn" onClick={() => setKeyword("Italian")}>Italian</button>
           </div>
         </div>
       </section>
@@ -100,7 +95,7 @@ export default function Home() {
           </div>
 
           <div className="restaurant-grid">
-            {filtered.slice(0, 6).map((restaurant) => (
+            {featured.map((restaurant) => (
               <RestaurantCard key={restaurant.restaurant_id} data={restaurant} />
             ))}
           </div>
@@ -115,7 +110,7 @@ export default function Home() {
           </div>
 
           <div className="restaurant-grid">
-            {filtered.map((restaurant) => (
+            {restaurants.map((restaurant) => (
               <RestaurantCard key={restaurant.restaurant_id} data={restaurant} />
             ))}
           </div>

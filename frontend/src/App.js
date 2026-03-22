@@ -9,12 +9,14 @@ import EditProfile from "./pages/EditProfile"
 import Preferences from "./pages/Preferences"
 import EditPreferences from "./pages/EditPreferences"
 import Favorites from "./pages/Favorites"
+import History from "./pages/History"
 import RestaurantDetails from "./pages/RestaurantDetails"
 import AddRestaurant from "./pages/AddRestaurant"
 import WriteReview from "./pages/WriteReview"
 import EditReview from "./pages/EditReview"
 import OwnerDashboard from "./pages/OwnerDashboard"
 import OwnerRestaurants from "./pages/OwnerRestaurants"
+import OwnerRestaurantReviews from "./pages/OwnerRestaurantReviews"
 import EditRestaurant from "./pages/EditRestaurant"
 import Chatbot from "./components/Chatbot"
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -69,6 +71,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute role="user">
+              <History />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/restaurant/:id" element={<RestaurantDetails />} />
         <Route
           path="/add-restaurant"
@@ -107,6 +117,14 @@ export default function App() {
           element={
             <ProtectedRoute role="owner">
               <OwnerRestaurants />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/restaurants/:id/reviews"
+          element={
+            <ProtectedRoute role="owner">
+              <OwnerRestaurantReviews />
             </ProtectedRoute>
           }
         />
