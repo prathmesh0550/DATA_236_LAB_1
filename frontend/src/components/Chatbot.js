@@ -6,6 +6,7 @@ export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -15,7 +16,6 @@ export default function Chatbot() {
   ])
   const bodyRef = useRef(null)
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     if (bodyRef.current) {
       bodyRef.current.scrollTop = bodyRef.current.scrollHeight
@@ -30,7 +30,6 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, { role: "user", text: userText, cards: [] }])
     setLoading(true)
 
-    // Build conversation history from current messages (exclude the initial greeting)
     const history = messages
       .filter((m) => m.text !== "Hi! Ask me about cuisines, cities, ratings, or restaurant recommendations.")
       .map((m) => ({ role: m.role, content: m.text }))
@@ -38,7 +37,8 @@ export default function Chatbot() {
     try {
       const res = await API.post("/ai-assistant/chat", {
         message: userText,
-        conversation_history: history
+        conversation_history: history,
+        session_id: sessionId
       })
       const data = res.data || {}
       setMessages((prev) => [
@@ -64,6 +64,7 @@ export default function Chatbot() {
   }
 
   const clearChat = () => {
+    setSessionId(crypto.randomUUID())
     setMessages([
       {
         role: "assistant",

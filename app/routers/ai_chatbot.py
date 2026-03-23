@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import uuid
 from typing import Dict, List, Optional
 from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_current_user
-from app.models import Restaurant, User, UserPreference
+from app.models import Restaurant, User, UserPreference, AIChat
 from app.schemas import ChatRequest, ChatResponse, RestaurantCard
 
 try:
@@ -65,13 +66,14 @@ def _normalize_price(value: str) -> str:
 def _load_prefs(db: Session, user: User) -> Dict:
     row = db.query(UserPreference).filter(UserPreference.user_id == user.user_id).first()
     if not row:
-        return {"cuisines": [], "price_tier": "", "dietary": [], "ambiance": [], "sort_preference": ""}
+        return {"cuisines": [], "price_tier": "", "dietary": [], "ambiance": [], "sort_preference": "", "city": (user.city or "").strip()}
     return {
         "cuisines": [c.strip() for c in (getattr(row, "cuisines", None) or [])],
         "price_tier": _normalize_price(getattr(row, "price_range", "") or ""),
         "dietary": [d.strip() for d in (getattr(row, "dietary_needs", None) or [])],
         "ambiance": [a.strip() for a in (getattr(row, "ambiance_preferences", None) or [])],
         "sort_preference": (getattr(row, "sort_preference", "") or "").strip(),
+        "city": (user.city or "").strip(),
     }
 
 def _db_options(db: Session):
@@ -101,14 +103,26 @@ def _is_simple_followup(message: str, history: str) -> bool:
     return any(p in lowered for p in all_phrases)
 
 def _answer_followup(message: str, history: str) -> Optional[str]:
-    """Answer directly from history. Returns None if it cannot determine an answer."""
+    """Answer directly from the most recent assistant reply in history."""
     lowered = _norm(message)
 
-    name_rating = re.findall(r"([\w][\w\s&']+?)\s*\(([\d.]+)[★*]", history)
+    last_reply_lines = []
+    in_last_assistant = False
+    for line in history.split("\n"):
+        if line.startswith("Assistant:"):
+            last_reply_lines = [line[len("Assistant:"):].strip()]
+            in_last_assistant = True
+        elif line.startswith("User:"):
+            in_last_assistant = False
+        elif in_last_assistant:
+            last_reply_lines.append(line)
+    last_reply = " ".join(last_reply_lines).strip()
+    if not last_reply:
+        last_reply = history
 
+    name_rating = re.findall(r"([\w][\w\s&']+?)\s*\(([\d.]+)[★*]", last_reply)
     if not name_rating:
-        name_rating = re.findall(r"([\w][\w\s&']{2,40})\s+([\d.]+)\s*[★*]", history)
-
+        name_rating = re.findall(r"([\w][\w\s&']{2,40})\s+([\d.]+)\s*[★*]", last_reply)
     if not name_rating:
         return None
 
@@ -137,14 +151,21 @@ def _heuristic_parse(
     if not cuisine:
         cuisine = next((kw.title() for kw in CUISINE_KW if kw in msg), None)
     if not cuisine and prefs.get("cuisines"):
-        cuisine = prefs["cuisines"][0]
+        pref_cuisines = [c for c in prefs["cuisines"] if c]
+        cuisine = pref_cuisines[0] if len(pref_cuisines) == 1 else None
 
     city = next((c for c in sorted(cities, key=len, reverse=True) if c and _norm(c) in msg), None)
+    if not city and any(p in msg for p in ["near me", "nearby", "closest", "around me"]):
+        user_city = prefs.get("city", "")
+        if user_city:
+            city = next((c for c in cities if _norm(c) == _norm(user_city)), user_city)
 
     price_tier = next(
         (tier for tier, aliases in PRICE_MAP.items() if any(_norm(a) in msg for a in aliases)),
         None,
     )
+    if not price_tier and prefs.get("price_tier"):
+        price_tier = prefs["price_tier"]
 
     min_rating = None
     m = re.search(r"(?:at least|min(?:imum)?|above|over)\s*(\d(?:\.\d)?)", msg)
@@ -156,12 +177,17 @@ def _heuristic_parse(
     wants_options = any(p in msg for p in ["what cuisines", "available cuisines", "what cities", "list options"])
     wants_web = any(p in msg for p in ["open now", "hours", "events", "trending", "tonight", "this weekend"])
 
+    msg_ambiance = [a for a in AMBIANCE_KW if _norm(a) in full]
+    msg_dietary  = [d for d in DIETARY_KW  if _norm(d) in full]
+    merged_ambiance = list(dict.fromkeys(prefs.get("ambiance", []) + msg_ambiance))
+    merged_dietary  = list(dict.fromkeys(prefs.get("dietary",  []) + msg_dietary))
+
     return ParsedQuery(
         cuisine=cuisine,
         city=city,
         price_tier=price_tier,
-        dietary=[d for d in DIETARY_KW  if _norm(d) in full],
-        ambiance=[a for a in AMBIANCE_KW if _norm(a) in full],
+        dietary=merged_dietary,
+        ambiance=merged_ambiance,
         occasion=next((o for o in OCCASION_KW if o in full), None),
         min_rating=min_rating,
         wants_options=wants_options,
@@ -215,14 +241,18 @@ Rules:
     except Exception:
         return _heuristic_parse(message, history, prefs, cuisines, cities)
 
-def _search(db: Session, q: ParsedQuery, limit: int = 40) -> List[Restaurant]:
+def _search(db: Session, q: ParsedQuery, limit: int = 40, pref_cuisines: List[str] = None) -> List[Restaurant]:
+    from sqlalchemy import or_
     query = db.query(Restaurant)
-    if q.cuisine: query = query.filter(Restaurant.cuisine_type.ilike(f"%{q.cuisine}%"))
+    if q.cuisine:
+        query = query.filter(Restaurant.cuisine_type.ilike(f"%{q.cuisine}%"))
+    elif pref_cuisines and len(pref_cuisines) > 1:
+        query = query.filter(or_(*[Restaurant.cuisine_type.ilike(f"%{c}%") for c in pref_cuisines]))
     if q.city: query = query.filter(Restaurant.city.ilike(f"%{q.city}%"))
     if q.min_rating: query = query.filter(Restaurant.avg_rating >= q.min_rating)
     return query.limit(limit).all()
 
-def _score(r: Restaurant, q: ParsedQuery, prefs: Dict) -> float:
+def _score(r: Restaurant, q: ParsedQuery, prefs: Dict, pref_cuisines: List[str] = None) -> float:
     blob = _norm(" ".join(filter(None, [
         r.name, r.cuisine_type, r.city,
         getattr(r, "address", ""), getattr(r, "description", ""),
@@ -233,7 +263,11 @@ def _score(r: Restaurant, q: ParsedQuery, prefs: Dict) -> float:
 
     score = rating * 20 + min(reviews, 200) * 0.05
 
-    if q.cuisine and r.cuisine_type and q.cuisine.lower() in r.cuisine_type.lower(): score += 30
+    if q.cuisine and r.cuisine_type and q.cuisine.lower() in r.cuisine_type.lower():
+        score += 30
+    elif not q.cuisine and r.cuisine_type and pref_cuisines:
+        if any(c.lower() in r.cuisine_type.lower() for c in pref_cuisines):
+            score += 25
     if q.city and r.city and q.city.lower() == r.city.lower(): score += 20
     if q.price_tier and r_price == q.price_tier: score += 12
     if q.occasion and q.occasion.lower() in blob: score += 8
@@ -253,10 +287,10 @@ def _score(r: Restaurant, q: ParsedQuery, prefs: Dict) -> float:
 
     return score
 
-def _rank(restaurants: List[Restaurant], q: ParsedQuery, prefs: Dict) -> List[Restaurant]:
+def _rank(restaurants: List[Restaurant], q: ParsedQuery, prefs: Dict, pref_cuisines: List[str] = None) -> List[Restaurant]:
     return sorted(
         restaurants,
-        key=lambda r: (_score(r, q, prefs), float(r.avg_rating or 0)),
+        key=lambda r: (_score(r, q, prefs, pref_cuisines), float(r.avg_rating or 0)),
         reverse=True,
     )
 
@@ -274,16 +308,26 @@ def _reason(r: Restaurant, q: ParsedQuery) -> str:
     if q.dietary and q.dietary[0].lower() in desc: parts.append(f"supports {q.dietary[0]}")
     return ", ".join(parts) or "highly rated and relevant to your search"
 
-def _build_reply(q: ParsedQuery, ranked: List[Restaurant], web_note: str) -> str:
+def _build_reply(q: ParsedQuery, ranked: List[Restaurant], web_note: str, prefs: Dict = None) -> str:
     if not ranked:
         msg = "I couldn't find a strong match. Try broadening your cuisine, city, price, or rating."
         return f"{msg}\n\n{web_note}" if web_note else msg
 
-    details = " ".join(filter(None, [
-        q.cuisine,
-        f"in {q.city}"      if q.city      else None,
-        f"for {q.occasion}" if q.occasion  else None,
-    ]))
+    details_parts = []
+    if q.cuisine:
+        details_parts.append(q.cuisine)
+    elif prefs and prefs.get("cuisines"):
+        details_parts.append(f"your preferences ({', '.join(prefs['cuisines'])})")
+    if q.city:
+        details_parts.append(f"in {q.city}")
+    if q.occasion:
+        details_parts.append(f"for {q.occasion}")
+    if q.price_tier and prefs and _normalize_price(prefs.get("price_tier", "")) == q.price_tier:
+        details_parts.append(f"within your {q.price_tier} budget")
+    if prefs and prefs.get("ambiance"):
+        details_parts.append(f"{', '.join(prefs['ambiance'])} ambiance")
+
+    details = " ".join(details_parts)
     header = f"Here are the best matches{' for ' + details if details else ''}:\n"
     lines = []
     for i, r in enumerate(ranked[:3], 1):
@@ -333,6 +377,17 @@ def _tavily(query: str) -> str:
     except (URLError, HTTPError, TimeoutError, json.JSONDecodeError):
         return ""
 
+def _save_chat(db: Session, user_id: int, session_id: str, history: list, user_message: str, assistant_reply: str):
+    messages = [{"role": m.role, "content": m.content} for m in history]
+    messages.append({"role": "user", "content": user_message})
+    messages.append({"role": "assistant", "content": assistant_reply})
+    existing = db.query(AIChat).filter(AIChat.session_id == session_id).first()
+    if existing:
+        existing.messages_json = messages
+    else:
+        db.add(AIChat(user_id=user_id, session_id=session_id, messages_json=messages))
+    db.commit()
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
@@ -342,6 +397,8 @@ async def chat(
     message = (request.message or "").strip()
     if not message:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    session_id = (request.session_id or "").strip() or str(uuid.uuid4())
 
     prefs = _load_prefs(db, current_user)
     cuisines, cities = _db_options(db)
@@ -361,22 +418,24 @@ async def chat(
     parsed = _parse_query(message, history, prefs, cuisines, cities)
 
     if parsed.wants_options:
-        return ChatResponse(
-            reply=(
-                f"Available cuisines: {', '.join(cuisines) or 'None found'}\n"
-                f"Available cities: {', '.join(cities) or 'None found'}"
-            ),
-            restaurants=[],
+        reply = (
+            f"Available cuisines: {', '.join(cuisines) or 'None found'}\n"
+            f"Available cities: {', '.join(cities) or 'None found'}"
         )
+        _save_chat(db, current_user.user_id, session_id, request.conversation_history or [], message, reply)
+        return ChatResponse(reply=reply, restaurants=[])
 
-    candidates = _search(db, parsed)
-    ranked = _rank(candidates, parsed, prefs)
+    candidates = _search(db, parsed, pref_cuisines=prefs.get("cuisines", []))
+    ranked = _rank(candidates, parsed, prefs, pref_cuisines=prefs.get("cuisines", []))
 
     web_note = ""
     if parsed.wants_web:
         web_note = _tavily(" ".join(filter(None, [message, parsed.city, parsed.cuisine])))
 
+    reply = _build_reply(parsed, ranked[:5], web_note, prefs)
+    _save_chat(db, current_user.user_id, session_id, request.conversation_history or [], message, reply)
+
     return ChatResponse(
-        reply=_build_reply(parsed, ranked[:5], web_note),
+        reply=reply,
         restaurants=_to_cards(ranked),
     )
