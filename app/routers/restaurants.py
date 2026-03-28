@@ -60,7 +60,7 @@ def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
     return r
 
 
-@router.post("/restaurants")
+@router.post("")
 def create_restaurant(
     body: RestaurantCreateIn,
     db: Session = Depends(get_db),

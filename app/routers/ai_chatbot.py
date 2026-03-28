@@ -95,7 +95,6 @@ PICK_ONE_PHRASES = [
 ]
 
 def _is_simple_followup(message: str, history: str) -> bool:
-    """Only trigger for direct comparison questions with no new city/cuisine."""
     if not history:
         return False
     lowered = _norm(message)
@@ -103,7 +102,6 @@ def _is_simple_followup(message: str, history: str) -> bool:
     return any(p in lowered for p in all_phrases)
 
 def _answer_followup(message: str, history: str) -> Optional[str]:
-    """Answer directly from the most recent assistant reply in history."""
     lowered = _norm(message)
 
     last_reply_lines = []
