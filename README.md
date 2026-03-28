@@ -17,6 +17,20 @@ AI chatbot to provide restaurant recommendations
 3. MySQL
 
 - Backend Setup (FastAPI)
+1. Can run backend from initial folder
+2. Create virtual environment: python -m venv venv
+3. Activate virtual environment:
+   - Windows: venv\Scripts\activate
+   - Mac/Linux: source venv/bin/activate
+4. Install dependencies: pip install -r requirements.txt
+5. Create a .env file with the following variables:
+   DATABASE_URL=mysql+pymysql://root:yourpassword@localhost/yourdbname
+   SECRET_KEY=your_secret_key
+   ALGORITHM=HS256
+   TAVILY_API_KEY=your_tavily_key
+   OLLAMA_MODEL=llama3
+6. Run database migrations / create tables: python create_tables.py
+7. Start backend: uvicorn app.main:app --reload
 
 - Frontend Setup (React)
 1. Navigate to frontend: cd frontend
