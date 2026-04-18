@@ -1,0 +1,169 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - yelpnet
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - yelpnet
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - yelpnet
+
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: user-service
+    depends_on:
+      - mongodb
+      - kafka
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SECRET_KEY: supersecretkey
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      SERVICE_NAME: user-service
+    networks:
+      - yelpnet
+
+  owner-service:
+    build:
+      context: ./services/owner-service
+    container_name: owner-service
+    depends_on:
+      - mongodb
+      - kafka
+    ports:
+      - "8001:8000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SECRET_KEY: supersecretkey
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      SERVICE_NAME: owner-service
+    networks:
+      - yelpnet
+
+  restaurant-service:
+    build:
+      context: ./services/restaurant-service
+    container_name: restaurant-service
+    depends_on:
+      - mongodb
+      - kafka
+    ports:
+      - "8002:8000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SECRET_KEY: supersecretkey
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      SERVICE_NAME: restaurant-service
+    networks:
+      - yelpnet
+
+  review-service:
+    build:
+      context: ./services/review-service
+    container_name: review-service
+    depends_on:
+      - mongodb
+      - kafka
+    ports:
+      - "8003:8000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SECRET_KEY: supersecretkey
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      SERVICE_NAME: review-service
+    networks:
+      - yelpnet
+
+  user-worker:
+    build:
+      context: ./services/user-worker
+    container_name: user-worker
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_NAME: user-worker
+    networks:
+      - yelpnet
+
+  restaurant-worker:
+    build:
+      context: ./services/restaurant-worker
+    container_name: restaurant-worker
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_NAME: restaurant-worker
+    networks:
+      - yelpnet
+
+  review-worker:
+    build:
+      context: ./services/review-worker
+    container_name: review-worker
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: yelp_lab2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVICE_NAME: review-worker
+    networks:
+      - yelpnet
+
+volumes:
+  mongodb_data:
+
+networks:
+  yelpnet:
+    driver: bridge

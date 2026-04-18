@@ -1,0 +1,40 @@
+import { Link } from "react-router-dom"
+
+export default function ReviewCard({ review, canEdit, onDelete }) {
+  return (
+    <div className="review-card">
+      <div className="review-card-top">
+        <div>
+          <h4>Rating: {review.rating}/5</h4>
+          <span>
+          {new Date(review.review_date + "Z").toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+        </div>
+      </div>
+
+      <p>{review.comment || "No comment"}</p>
+
+      {review.photos && review.photos.length > 0 && (
+        <div className="review-photo-grid">
+          {review.photos.map((photo, index) => (
+            <img key={index} src={photo} alt={`Review ${index + 1}`} className="review-photo" />
+          ))}
+        </div>
+      )}
+
+      {canEdit && (
+        <div className="review-card-actions">
+          <Link to={`/edit-review/${review.review_id}`} className="btn btn-outline">Edit</Link>
+          <button className="btn btn-primary" onClick={() => onDelete(review.review_id)}>Delete</button>
+        </div>
+      )}
+    </div>
+  )
+}
