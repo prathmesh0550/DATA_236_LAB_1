@@ -13,16 +13,32 @@ export default function OwnerAddRestaurant() {
     address: "",
     description: "",
     hours: "",
-    contact_info: "",
-    photos: ""
+    contact_info: ""
   })
+  const [photos, setPhotos] = useState([])
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    Promise.all(
+      files.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.readAsDataURL(file)
+          })
+      )
+    ).then((results) => setPhotos(results))
+  }
 
   const submit = async (e) => {
     e.preventDefault()
 
     const payload = {
       ...form,
-      photos: form.photos ? form.photos.split(",").map((x) => x.trim()).filter(Boolean) : []
+      photos
     }
 
     const res = await API.post("/restaurants", payload)
@@ -35,7 +51,7 @@ export default function OwnerAddRestaurant() {
       <div className="subpage-spacer"></div>
 
       <div className="container page-narrow">
-        <div className="simple-card">
+        <div className="simple-card enhanced-form-card">
           <h2>Add Restaurant</h2>
 
           <form className="auth-form" onSubmit={submit}>
@@ -80,13 +96,20 @@ export default function OwnerAddRestaurant() {
             </div>
 
             <div className="field-group">
-              <label>Photo URLs</label>
-              <input
-                value={form.photos}
-                onChange={(e) => setForm({ ...form, photos: e.target.value })}
-                placeholder="url1, url2"
-              />
+              <label>Restaurant Photos</label>
+              <label className="upload-box">
+                <span>Choose Images</span>
+                <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
+              </label>
             </div>
+
+            {photos.length > 0 && (
+              <div className="image-preview-grid">
+                {photos.map((photo, index) => (
+                  <img key={index} src={photo} alt={`Upload ${index + 1}`} className="preview-image" />
+                ))}
+              </div>
+            )}
 
             <button type="submit" className="btn btn-primary full-width">Create Restaurant</button>
           </form>

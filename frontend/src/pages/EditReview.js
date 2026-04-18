@@ -8,7 +8,7 @@ export default function EditReview() {
   const navigate = useNavigate()
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState("")
-  const [photos, setPhotos] = useState("")
+  const [photos, setPhotos] = useState([])
   const [restaurantId, setRestaurantId] = useState("")
 
   useEffect(() => {
@@ -18,16 +18,33 @@ export default function EditReview() {
         setRating(review.rating || 5)
         setComment(review.comment || "")
         setRestaurantId(review.restaurant_id)
+        setPhotos(review.photos || [])
       }
     })
   }, [reviewId])
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    Promise.all(
+      files.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.readAsDataURL(file)
+          })
+      )
+    ).then((results) => setPhotos((prev) => [...prev, ...results]))
+  }
 
   const submit = async (e) => {
     e.preventDefault()
     await API.put(`/reviews/${reviewId}`, {
       rating: Number(rating),
       comment,
-      photos: photos ? photos.split(",").map((x) => x.trim()).filter(Boolean) : []
+      photos
     })
     navigate(`/restaurant/${restaurantId}`)
   }
@@ -36,9 +53,10 @@ export default function EditReview() {
     <div className="subpage">
       <Navbar />
       <div className="subpage-spacer"></div>
-      <div className="container">
-        <div className="simple-card">
+      <div className="container page-narrow">
+        <div className="simple-card enhanced-form-card">
           <h2>Edit Review</h2>
+
           <form className="auth-form" onSubmit={submit}>
             <div className="field-group">
               <label>Rating</label>
@@ -47,13 +65,24 @@ export default function EditReview() {
 
             <div className="field-group">
               <label>Comment</label>
-              <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows="4" />
+              <textarea rows="4" value={comment} onChange={(e) => setComment(e.target.value)} />
             </div>
 
             <div className="field-group">
-              <label>Review Photo URLs</label>
-              <input value={photos} onChange={(e) => setPhotos(e.target.value)} placeholder="url1, url2" />
+              <label>Review Photos</label>
+              <label className="upload-box">
+                <span>Add Images</span>
+                <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
+              </label>
             </div>
+
+            {photos.length > 0 && (
+              <div className="image-preview-grid">
+                {photos.map((photo, index) => (
+                  <img key={index} src={photo} alt={`Upload ${index + 1}`} className="preview-image" />
+                ))}
+              </div>
+            )}
 
             <button type="submit" className="btn btn-primary full-width">Update Review</button>
           </form>

@@ -6,6 +6,7 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [role, setRole] = useState(localStorage.getItem("role") || "")
   const [displayName, setDisplayName] = useState(localStorage.getItem("displayName") || "")
+  const [profilePicture, setProfilePicture] = useState(localStorage.getItem("profilePicture") || "")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -14,6 +15,7 @@ export default function Navbar() {
     if (!token || !savedRole) {
       setRole("")
       setDisplayName("")
+      setProfilePicture("")
       return
     }
 
@@ -22,16 +24,21 @@ export default function Navbar() {
     API.get(endpoint)
       .then((res) => {
         const name = res.data?.name || ""
+        const photo = res.data?.profile_picture || ""
         setRole(savedRole)
         setDisplayName(name)
+        setProfilePicture(photo)
         localStorage.setItem("displayName", name)
+        localStorage.setItem("profilePicture", photo)
       })
       .catch(() => {
         localStorage.removeItem("token")
         localStorage.removeItem("role")
         localStorage.removeItem("displayName")
+        localStorage.removeItem("profilePicture")
         setRole("")
         setDisplayName("")
+        setProfilePicture("")
       })
   }, [])
 
@@ -39,8 +46,10 @@ export default function Navbar() {
     localStorage.removeItem("token")
     localStorage.removeItem("role")
     localStorage.removeItem("displayName")
+    localStorage.removeItem("profilePicture")
     setRole("")
     setDisplayName("")
+    setProfilePicture("")
     navigate("/")
     window.location.reload()
   }
@@ -70,9 +79,25 @@ export default function Navbar() {
                 {role === "owner" ? `Owner: ${displayName || "Owner"}` : `Hi, ${displayName || "User"}`}
               </span>
 
-              {role === "user" && <Link to="/profile" className="btn btn-ghost">Profile</Link>}
-              {role === "user" && <Link to="/add-restaurant" className="btn btn-ghost">Add Restaurant</Link>}
+              {role === "user" && (
+                <Link to="/profile" className="navbar-avatar-link">
+                  <img
+                    src={profilePicture || "https://placehold.co/80x80/png?text=U"}
+                    alt="Profile"
+                    className="navbar-avatar"
+                  />
+                </Link>
+              )}
 
+              {role === "owner" && (
+                <div className="navbar-avatar-link">
+                  <div className="navbar-avatar owner-avatar-initial">
+                    {(displayName || "O").charAt(0)}
+                  </div>
+                </div>
+              )}
+
+              {role === "user" && <Link to="/add-restaurant" className="btn btn-ghost">Add Restaurant</Link>}
               <button className="btn btn-primary" onClick={logout}>Logout</button>
             </>
           ) : (
