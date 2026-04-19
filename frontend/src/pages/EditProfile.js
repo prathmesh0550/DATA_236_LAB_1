@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import { userApi } from "../api/axios"
+import API from "../api/axios"
 
 export default function EditProfile() {
   const navigate = useNavigate()
@@ -18,7 +18,7 @@ export default function EditProfile() {
   })
 
   useEffect(() => {
-    userApi.get("/users/me").then((res) => {
+    API.get("/users/me").then((res) => {
       const data = res.data || {}
       setForm({
         name: data.name || "",
@@ -38,10 +38,21 @@ export default function EditProfile() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setForm((prev) => ({ ...prev, profile_picture: reader.result }))
+    }
+    reader.readAsDataURL(file)
+  }
+
   const save = async (e) => {
     e.preventDefault()
 
-    await userApi.put("/users/me", {
+    await API.put("/users/me", {
       name: form.name,
       phone: form.phone,
       city: form.city,
@@ -53,9 +64,10 @@ export default function EditProfile() {
     })
 
     if (form.profile_picture) {
-      await userApi.post("/users/me/profile-picture", {
+      await API.post("/users/me/profile-picture", {
         profile_picture: form.profile_picture
       })
+      localStorage.setItem("profilePicture", form.profile_picture)
     }
 
     navigate("/profile")
@@ -65,10 +77,26 @@ export default function EditProfile() {
     <div className="subpage">
       <Navbar />
       <div className="subpage-spacer"></div>
-      <div className="container">
-        <div className="simple-card">
+      <div className="container page-narrow">
+        <div className="simple-card enhanced-form-card">
           <h2>Edit Profile</h2>
+
           <form className="auth-form" onSubmit={save}>
+            <div className="file-upload-section">
+              <div className="profile-upload-preview-wrap">
+                <img
+                  src={form.profile_picture || "https://placehold.co/180x180/png?text=User"}
+                  alt="Preview"
+                  className="profile-upload-preview"
+                />
+              </div>
+
+              <label className="upload-box">
+                <span>Upload Profile Picture</span>
+                <input type="file" accept="image/*" onChange={handleFile} />
+              </label>
+            </div>
+
             <div className="field-group">
               <label>Name</label>
               <input name="name" value={form.name} onChange={handleChange} />
@@ -113,11 +141,6 @@ export default function EditProfile() {
             <div className="field-group">
               <label>About Me</label>
               <textarea name="about_me" value={form.about_me} onChange={handleChange} rows="4" />
-            </div>
-
-            <div className="field-group">
-              <label>Profile Picture URL</label>
-              <input name="profile_picture" value={form.profile_picture} onChange={handleChange} />
             </div>
 
             <button type="submit" className="btn btn-primary full-width">Save Profile</button>

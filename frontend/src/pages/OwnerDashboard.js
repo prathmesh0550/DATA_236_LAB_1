@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import Navbar from "../components/Navbar"
-import { ownerApi } from "../api/axios"
+import API from "../api/axios"
 
 export default function OwnerDashboard() {
   const [dashboard, setDashboard] = useState({
@@ -13,19 +13,25 @@ export default function OwnerDashboard() {
   const [filterRating, setFilterRating] = useState("")
 
   useEffect(() => {
-    ownerApi.get("/owners/me/dashboard")
-      .then((res) => setDashboard(res.data || {
-        restaurant_count: 0,
-        total_reviews: 0,
-        avg_rating_overall: 0,
-        recent_reviews: []
-      }))
-      .catch(() => setDashboard({
-        restaurant_count: 0,
-        total_reviews: 0,
-        avg_rating_overall: 0,
-        recent_reviews: []
-      }))
+    API.get("/owners/me/dashboard")
+      .then((res) =>
+        setDashboard(
+          res.data || {
+            restaurant_count: 0,
+            total_reviews: 0,
+            avg_rating_overall: 0,
+            recent_reviews: []
+          }
+        )
+      )
+      .catch(() =>
+        setDashboard({
+          restaurant_count: 0,
+          total_reviews: 0,
+          avg_rating_overall: 0,
+          recent_reviews: []
+        })
+      )
   }, [])
 
   const filteredReviews = useMemo(() => {
@@ -45,11 +51,30 @@ export default function OwnerDashboard() {
     <div className="subpage">
       <Navbar />
       <div className="subpage-spacer"></div>
+
       <div className="container">
-        <div className="dashboard-grid">
-          <div className="simple-card"><h2>{dashboard.restaurant_count}</h2><p>Claimed Restaurants</p></div>
-          <div className="simple-card"><h2>{dashboard.total_reviews}</h2><p>Total Reviews</p></div>
-          <div className="simple-card"><h2>{Number(dashboard.avg_rating_overall || 0).toFixed(1)}</h2><p>Average Rating</p></div>
+        <div className="owner-dashboard-hero">
+          <div>
+            <h1>Owner Analytics Dashboard</h1>
+            <p>Track restaurants, ratings, and recent customer feedback.</p>
+          </div>
+        </div>
+
+        <div className="analytics-grid">
+          <div className="analytics-card">
+            <span>Claimed Restaurants</span>
+            <strong>{dashboard.restaurant_count}</strong>
+          </div>
+
+          <div className="analytics-card">
+            <span>Total Reviews</span>
+            <strong>{dashboard.total_reviews}</strong>
+          </div>
+
+          <div className="analytics-card">
+            <span>Average Rating</span>
+            <strong>{Number(dashboard.avg_rating_overall || 0).toFixed(1)}</strong>
+          </div>
         </div>
 
         <div className="view-card">
@@ -77,14 +102,14 @@ export default function OwnerDashboard() {
           <div className="reviews-list">
             {filteredReviews.length === 0 && <p>No reviews found.</p>}
             {filteredReviews.map((review) => (
-              <div key={review.review_id} className="review-card">
+              <div key={review.review_id} className="review-card analytics-review-card">
                 <div className="review-card-top">
                   <div>
                     <h4>Restaurant #{review.restaurant_id}</h4>
                     <span>{new Date(review.review_date).toLocaleString()}</span>
                   </div>
+                  <div className="analytics-rating-pill">{review.rating}/5</div>
                 </div>
-                <p>Rating: {review.rating}/5</p>
                 <p>{review.comment || "No comment"}</p>
               </div>
             ))}
