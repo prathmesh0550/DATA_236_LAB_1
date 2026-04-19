@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { restaurantApi } from "../api/axios"
 
 export default function EditRestaurant() {
   const { id } = useParams()
@@ -19,7 +19,7 @@ export default function EditRestaurant() {
   const [photos, setPhotos] = useState([])
 
   useEffect(() => {
-    API.get(`/restaurants/${id}`).then((res) => {
+    restaurantApi.get(`/restaurants/${id}`).then((res) => {
       const data = res.data || {}
       setForm({
         name: data.name || "",
@@ -53,7 +53,7 @@ export default function EditRestaurant() {
 
   const submit = async (e) => {
     e.preventDefault()
-    await API.put(`/restaurants/${id}`, {
+    await restaurantApi.put(`/restaurants/${id}`, {
       name: form.name,
       cuisine_type: form.cuisine_type,
       city: form.city,

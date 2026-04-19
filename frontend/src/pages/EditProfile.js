@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { userApi } from "../api/axios"
 
 export default function EditProfile() {
   const navigate = useNavigate()
@@ -18,7 +18,7 @@ export default function EditProfile() {
   })
 
   useEffect(() => {
-    API.get("/users/me").then((res) => {
+    userApi.get("/users/me").then((res) => {
       const data = res.data || {}
       setForm({
         name: data.name || "",
@@ -52,7 +52,7 @@ export default function EditProfile() {
   const save = async (e) => {
     e.preventDefault()
 
-    await API.put("/users/me", {
+    await userApi.put("/users/me", {
       name: form.name,
       phone: form.phone,
       city: form.city,
@@ -64,7 +64,7 @@ export default function EditProfile() {
     })
 
     if (form.profile_picture) {
-      await API.post("/users/me/profile-picture", {
+      await userApi.post("/users/me/profile-picture", {
         profile_picture: form.profile_picture
       })
       localStorage.setItem("profilePicture", form.profile_picture)

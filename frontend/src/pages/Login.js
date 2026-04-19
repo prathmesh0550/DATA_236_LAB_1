@@ -24,13 +24,14 @@ export default function Login() {
       localStorage.setItem("token", res.data.access_token)
       localStorage.setItem("role", "user")
 
-      const meRes = await userApi.get("/auth/me", {
+      const meRes = await userApi.get("/users/me", {
         headers: {
           Authorization: `Bearer ${res.data.access_token}`,
         },
       })
 
       localStorage.setItem("displayName", meRes.data?.name || "User")
+      localStorage.setItem("profile_picture", meRes.data?.profile_picture || "")
 
       navigate("/")
       window.location.reload()

@@ -532,6 +532,34 @@ textarea {
   font-weight: 700;
 }
 
+.profile-avatar-link {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+  text-decoration: none;
+}
+
+.profile-avatar-link {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.profile-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid #eee;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.profile-avatar:hover {
+  transform: scale(1.1);
+}
+
 .subpage {
   min-height: 100vh;
   background: #f7f7f8;

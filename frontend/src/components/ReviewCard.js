@@ -1,21 +1,26 @@
 import { Link } from "react-router-dom"
 
+const formatDate = (val) => {
+  if (!val) return "No date"
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return "No date"
+  return d.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
 export default function ReviewCard({ review, canEdit, onDelete }) {
   return (
     <div className="review-card">
       <div className="review-card-top">
         <div>
           <h4>Rating: {review.rating}/5</h4>
-          <span>
-          {new Date(review.review_date + "Z").toLocaleString("en-US", {
-            timeZone: "America/Los_Angeles",
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
+          <span>{formatDate(review.review_date)}</span>
         </div>
       </div>
 

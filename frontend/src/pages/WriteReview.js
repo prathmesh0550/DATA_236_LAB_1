@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { reviewApi } from "../api/axios"
 
 export default function WriteReview() {
   const { id } = useParams()
@@ -28,7 +28,7 @@ export default function WriteReview() {
 
   const submit = async (e) => {
     e.preventDefault()
-    await API.post(`/restaurants/${id}/reviews`, {
+    await reviewApi.post(`/restaurants/${id}/reviews`, {
       rating: Number(rating),
       comment,
       photos

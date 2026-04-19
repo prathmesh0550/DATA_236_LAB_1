@@ -16,6 +16,14 @@ def oid(value: str) -> ObjectId:
         raise HTTPException(status_code=400, detail="Invalid ID") from exc
 
 
+def serialize_date(val):
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return val
+    return val.isoformat()
+
+
 def serialize_restaurant(doc: dict) -> dict:
     return {
         "restaurant_id": str(doc["_id"]),
@@ -102,7 +110,7 @@ def my_restaurant_reviews(
             "user_id": str(rv["user_id"]),
             "rating": rv["rating"],
             "comment": rv.get("comment"),
-            "review_date": rv["review_date"],
+            "review_date": serialize_date(rv.get("review_date")),
             "photos": rv.get("photos", []),
         }
         for rv in reviews
@@ -118,6 +126,7 @@ def dashboard(
         db["restaurants"].find({"claimed_by_owner_id": current_owner["_id"]})
     )
     restaurant_ids = [r["_id"] for r in restaurants]
+    restaurant_name_map = {str(r["_id"]): r.get("name", "Unknown") for r in restaurants}
 
     if not restaurant_ids:
         return {
@@ -149,10 +158,11 @@ def dashboard(
             {
                 "review_id": str(rr["_id"]),
                 "restaurant_id": str(rr["restaurant_id"]),
+                "restaurant_name": restaurant_name_map.get(str(rr["restaurant_id"]), "Unknown"),
                 "user_id": str(rr["user_id"]),
                 "rating": rr["rating"],
                 "comment": rr.get("comment"),
-                "review_date": rr["review_date"].isoformat() if rr.get("review_date") else None,
+                "review_date": serialize_date(rr.get("review_date")),
             }
             for rr in recent_reviews
         ],

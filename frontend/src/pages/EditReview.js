@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { reviewApi, userApi } from "../api/axios"
 
 export default function EditReview() {
   const { reviewId } = useParams()
@@ -12,7 +12,7 @@ export default function EditReview() {
   const [restaurantId, setRestaurantId] = useState("")
 
   useEffect(() => {
-    API.get("/users/me/history").then((res) => {
+    userApi.get("/users/me/history").then((res) => {
       const review = (res.data?.reviews || []).find((r) => String(r.review_id) === String(reviewId))
       if (review) {
         setRating(review.rating || 5)
@@ -41,7 +41,7 @@ export default function EditReview() {
 
   const submit = async (e) => {
     e.preventDefault()
-    await API.put(`/reviews/${reviewId}`, {
+    await reviewApi.put(`/reviews/${reviewId}`, {
       rating: Number(rating),
       comment,
       photos

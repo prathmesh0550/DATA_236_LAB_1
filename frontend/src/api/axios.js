@@ -27,3 +27,7 @@ export const reviewApi = axios.create({
 });
 
 [userApi, ownerApi, restaurantApi, reviewApi].forEach(addAuthInterceptor);
+
+// temporary compatibility export
+const API = userApi;
+export default API;

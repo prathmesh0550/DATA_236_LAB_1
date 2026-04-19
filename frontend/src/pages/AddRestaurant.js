@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { restaurantApi } from "../api/axios"
 
 export default function AddRestaurant() {
   const navigate = useNavigate()
@@ -39,7 +39,7 @@ export default function AddRestaurant() {
       ...form,
       photos
     }
-    const res = await API.post("/restaurants", payload)
+    const res = await restaurantApi.post("/restaurants", payload)
     navigate(`/restaurant/${res.data.restaurant_id}`)
   }
 

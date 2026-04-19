@@ -1,12 +1,15 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useEffect, useState } from "react"
-import API from "../api/axios"
+import { userApi, ownerApi } from "../api/axios"
 
 export default function Navbar() {
-  const navigate = useNavigate()
   const [role, setRole] = useState(localStorage.getItem("role") || "")
-  const [displayName, setDisplayName] = useState(localStorage.getItem("displayName") || "")
-  const [profilePicture, setProfilePicture] = useState(localStorage.getItem("profilePicture") || "")
+  const [displayName, setDisplayName] = useState(
+    localStorage.getItem("displayName") || ""
+  )
+  const [profilePicture, setProfilePicture] = useState(
+    localStorage.getItem("profile_picture") || ""
+  )
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -19,45 +22,71 @@ export default function Navbar() {
       return
     }
 
-    const endpoint = savedRole === "owner" ? "/auth/owner/me" : "/auth/user/me"
+    const loadUserData = async () => {
+      try {
+        if (savedRole === "owner") {
+          const res = await ownerApi.get("/auth/me")
+          const name = res.data?.name || ""
 
-    API.get(endpoint)
-      .then((res) => {
-        const name = res.data?.name || ""
-        const photo = res.data?.profile_picture || ""
-        setRole(savedRole)
-        setDisplayName(name)
-        setProfilePicture(photo)
-        localStorage.setItem("displayName", name)
-        localStorage.setItem("profilePicture", photo)
-      })
-      .catch(() => {
+          setRole(savedRole)
+          setDisplayName(name)
+          setProfilePicture("")
+
+          localStorage.setItem("displayName", name)
+          localStorage.removeItem("profile_picture")
+        } else {
+          const res = await userApi.get("/users/me")
+          const name = res.data?.name || ""
+          const picture = res.data?.profile_picture || ""
+
+          setRole(savedRole)
+          setDisplayName(name)
+          setProfilePicture(picture)
+
+          localStorage.setItem("displayName", name)
+          localStorage.setItem("profile_picture", picture)
+        }
+      } catch {
         localStorage.removeItem("token")
         localStorage.removeItem("role")
         localStorage.removeItem("displayName")
-        localStorage.removeItem("profilePicture")
+        localStorage.removeItem("profile_picture")
+
         setRole("")
         setDisplayName("")
         setProfilePicture("")
-      })
+      }
+    }
+
+    loadUserData()
   }, [])
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const apiClient = role === "owner" ? ownerApi : userApi
+      await apiClient.post("/auth/logout")
+    } catch {
+      // ignore backend logout errors
+    }
+
     localStorage.removeItem("token")
     localStorage.removeItem("role")
     localStorage.removeItem("displayName")
-    localStorage.removeItem("profilePicture")
+    localStorage.removeItem("profile_picture")
+
     setRole("")
     setDisplayName("")
     setProfilePicture("")
-    navigate("/")
-    window.location.reload()
+
+    window.location.href = "/"
   }
 
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <Link to="/" className="brand">yelp</Link>
+        <Link to="/" className="brand">
+          yelp
+        </Link>
 
         <div className="topbar-links">
           <a href="/#activity">Popular Restaurants</a>
@@ -69,43 +98,55 @@ export default function Navbar() {
 
           {role === "owner" && <Link to="/owner/dashboard">Owner Dashboard</Link>}
           {role === "owner" && <Link to="/owner/restaurants">My Restaurants</Link>}
-          {role === "owner" && <Link to="/owner/add-restaurant">Add Restaurant</Link>}
+          {role === "owner" && (
+            <Link to="/owner/add-restaurant">Add Restaurant</Link>
+          )}
         </div>
 
         <div className="topbar-actions">
           {role ? (
             <>
-              <span className="user-badge">
-                {role === "owner" ? `Owner: ${displayName || "Owner"}` : `Hi, ${displayName || "User"}`}
-              </span>
+              {role === "user" ? (
+                <>
+                  <Link to="/profile" className="profile-avatar-link" title={displayName || "Profile"}>
+                    <img
+                      src={
+                        profilePicture ||
+                        "https://placehold.co/40x40/png?text=U"
+                      }
+                      alt={displayName || "Profile"}
+                      className="profile-avatar"
+                    />
+                  </Link>
 
-              {role === "user" && (
-                <Link to="/profile" className="navbar-avatar-link">
-                  <img
-                    src={profilePicture || "https://placehold.co/80x80/png?text=U"}
-                    alt="Profile"
-                    className="navbar-avatar"
-                  />
-                </Link>
+                  <Link to="/add-restaurant" className="btn btn-ghost">
+                    Add Restaurant
+                  </Link>
+                </>
+              ) : (
+                <span className="user-badge">
+                  Owner: {displayName || "Owner"}
+                </span>
               )}
 
-              {role === "owner" && (
-                <div className="navbar-avatar-link">
-                  <div className="navbar-avatar owner-avatar-initial">
-                    {(displayName || "O").charAt(0)}
-                  </div>
-                </div>
-              )}
-
-              {role === "user" && <Link to="/add-restaurant" className="btn btn-ghost">Add Restaurant</Link>}
-              <button className="btn btn-primary" onClick={logout}>Logout</button>
+              <button className="btn btn-primary" onClick={logout}>
+                Logout
+              </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="btn btn-ghost">User Login</Link>
-              <Link to="/signup" className="btn btn-primary">User Sign Up</Link>
-              <Link to="/owner/login" className="btn btn-ghost">Owner Login</Link>
-              <Link to="/owner/signup" className="btn btn-primary">Owner Sign Up</Link>
+              <Link to="/login" className="btn btn-ghost">
+                User Login
+              </Link>
+              <Link to="/signup" className="btn btn-primary">
+                User Sign Up
+              </Link>
+              <Link to="/owner/login" className="btn btn-ghost">
+                Owner Login
+              </Link>
+              <Link to="/owner/signup" className="btn btn-primary">
+                Owner Sign Up
+              </Link>
             </>
           )}
         </div>

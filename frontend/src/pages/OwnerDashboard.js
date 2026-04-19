@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import Navbar from "../components/Navbar"
-import API from "../api/axios"
+import { ownerApi } from "../api/axios"
 
 export default function OwnerDashboard() {
   const [dashboard, setDashboard] = useState({
@@ -13,7 +13,7 @@ export default function OwnerDashboard() {
   const [filterRating, setFilterRating] = useState("")
 
   useEffect(() => {
-    API.get("/owners/me/dashboard")
+    ownerApi.get("/owners/me/dashboard")
       .then((res) =>
         setDashboard(
           res.data || {
@@ -38,7 +38,7 @@ export default function OwnerDashboard() {
     return (dashboard.recent_reviews || []).filter((review) => {
       const textMatch =
         !filterText ||
-        String(review.restaurant_id).includes(filterText) ||
+        (review.restaurant_name || "").toLowerCase().includes(filterText.toLowerCase()) ||
         (review.comment || "").toLowerCase().includes(filterText.toLowerCase())
 
       const ratingMatch = !filterRating || String(review.rating) === String(filterRating)
@@ -46,6 +46,12 @@ export default function OwnerDashboard() {
       return textMatch && ratingMatch
     })
   }, [dashboard, filterText, filterRating])
+
+  const formatDate = (val) => {
+    if (!val) return "No date"
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? "No date" : d.toLocaleString()
+  }
 
   return (
     <div className="subpage">
@@ -85,7 +91,7 @@ export default function OwnerDashboard() {
           <div className="owner-filter-bar">
             <input
               type="text"
-              placeholder="Filter by restaurant id or keyword"
+              placeholder="Filter by restaurant name or keyword"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
             />
@@ -105,8 +111,8 @@ export default function OwnerDashboard() {
               <div key={review.review_id} className="review-card analytics-review-card">
                 <div className="review-card-top">
                   <div>
-                    <h4>Restaurant #{review.restaurant_id}</h4>
-                    <span>{new Date(review.review_date).toLocaleString()}</span>
+                    <h4>{review.restaurant_name || "Unknown Restaurant"}</h4>
+                    <span>{formatDate(review.review_date)}</span>
                   </div>
                   <div className="analytics-rating-pill">{review.rating}/5</div>
                 </div>
