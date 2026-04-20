@@ -1,24 +1,21 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import Navbar from "../components/Navbar"
 import RestaurantCard from "../components/RestaurantCard"
 import { userApi } from "../api/axios"
+import { fetchFavorites, removeFavoriteLocal } from "../store/slices/favoritesSlice"
 
 export default function Favorites() {
-  const [items, setItems] = useState([])
-
-  const loadFavorites = () => {
-    userApi.get("/users/me/favorites")
-      .then((res) => setItems(res.data || []))
-      .catch(() => setItems([]))
-  }
+  const dispatch = useDispatch()
+  const { items, loading, error } = useSelector((s) => s.favorites)
 
   useEffect(() => {
-    loadFavorites()
-  }, [])
+    dispatch(fetchFavorites())
+  }, [dispatch])
 
   const removeFavorite = async (restaurantId) => {
     await userApi.delete(`/favorites/${restaurantId}`)
-    loadFavorites()
+    dispatch(removeFavoriteLocal(restaurantId))
   }
 
   return (
@@ -30,6 +27,9 @@ export default function Favorites() {
           <h2>Your Favorites</h2>
           <p>Places you saved for later</p>
         </div>
+
+        {loading && <p>Loading favorites...</p>}
+        {error && <p>{error}</p>}
 
         <div className="restaurant-grid">
           {items.map((item) => (

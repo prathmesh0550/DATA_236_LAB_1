@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-create-topics
+  namespace: yelp-lab2
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: topics
+          image: confluentinc/cp-kafka:7.5.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              BOOTSTRAP="${KAFKA_BOOTSTRAP_SERVERS}"
+              until kafka-topics --bootstrap-server "$BOOTSTRAP" --list >/dev/null 2>&1; do
+                sleep 5
+              done
+              for t in review.created review.updated review.deleted restaurant.created restaurant.updated restaurant.claimed user.created user.updated booking.status; do
+                kafka-topics --create --bootstrap-server "$BOOTSTRAP" --topic "$t" --if-not-exists --replication-factor 1 --partitions 3
+              done
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: yelp-config
+                  key: KAFKA_BOOTSTRAP_SERVERS

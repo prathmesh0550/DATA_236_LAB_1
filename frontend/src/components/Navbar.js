@@ -1,84 +1,44 @@
-import { Link } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { userApi, ownerApi } from "../api/axios"
+import { clearCredentials, setCredentials } from "../store/slices/authSlice"
 
 export default function Navbar() {
-  const [role, setRole] = useState(localStorage.getItem("role") || "")
-  const [displayName, setDisplayName] = useState(
-    localStorage.getItem("displayName") || ""
-  )
-  const [profilePicture, setProfilePicture] = useState(
-    localStorage.getItem("profile_picture") || ""
-  )
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { token, role, displayName, profilePicture } = useSelector((s) => s.auth)
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    const savedRole = localStorage.getItem("role")
+    if (!token || !role) return
 
-    if (!token || !savedRole) {
-      setRole("")
-      setDisplayName("")
-      setProfilePicture("")
-      return
-    }
+    const apiClient = role === "owner" ? ownerApi : userApi
+    const endpoint = role === "owner" ? "/auth/me" : "/users/me"
 
-    const loadUserData = async () => {
-      try {
-        if (savedRole === "owner") {
-          const res = await ownerApi.get("/auth/me")
-          const name = res.data?.name || ""
-
-          setRole(savedRole)
-          setDisplayName(name)
-          setProfilePicture("")
-
-          localStorage.setItem("displayName", name)
-          localStorage.removeItem("profile_picture")
-        } else {
-          const res = await userApi.get("/users/me")
-          const name = res.data?.name || ""
-          const picture = res.data?.profile_picture || ""
-
-          setRole(savedRole)
-          setDisplayName(name)
-          setProfilePicture(picture)
-
-          localStorage.setItem("displayName", name)
-          localStorage.setItem("profile_picture", picture)
-        }
-      } catch {
-        localStorage.removeItem("token")
-        localStorage.removeItem("role")
-        localStorage.removeItem("displayName")
-        localStorage.removeItem("profile_picture")
-
-        setRole("")
-        setDisplayName("")
-        setProfilePicture("")
-      }
-    }
-
-    loadUserData()
-  }, [])
+    apiClient.get(endpoint)
+      .then((res) => {
+        dispatch(
+          setCredentials({
+            token,
+            role,
+            displayName: res.data?.name || (role === "owner" ? "Owner" : "User"),
+            profilePicture: role === "owner" ? "" : res.data?.profile_picture || ""
+          })
+        )
+      })
+      .catch(() => {
+        dispatch(clearCredentials())
+      })
+  }, [token, role, dispatch])
 
   const logout = async () => {
     try {
       const apiClient = role === "owner" ? ownerApi : userApi
       await apiClient.post("/auth/logout")
-    } catch {
-      // ignore backend logout errors
-    }
+    } catch {}
 
-    localStorage.removeItem("token")
-    localStorage.removeItem("role")
-    localStorage.removeItem("displayName")
-    localStorage.removeItem("profile_picture")
-
-    setRole("")
-    setDisplayName("")
-    setProfilePicture("")
-
-    window.location.href = "/"
+    dispatch(clearCredentials())
+    navigate("/")
   }
 
   return (
@@ -98,9 +58,7 @@ export default function Navbar() {
 
           {role === "owner" && <Link to="/owner/dashboard">Owner Dashboard</Link>}
           {role === "owner" && <Link to="/owner/restaurants">My Restaurants</Link>}
-          {role === "owner" && (
-            <Link to="/owner/add-restaurant">Add Restaurant</Link>
-          )}
+          {role === "owner" && <Link to="/owner/add-restaurant">Add Restaurant</Link>}
         </div>
 
         <div className="topbar-actions">
@@ -110,10 +68,7 @@ export default function Navbar() {
                 <>
                   <Link to="/profile" className="profile-avatar-link" title={displayName || "Profile"}>
                     <img
-                      src={
-                        profilePicture ||
-                        "https://placehold.co/40x40/png?text=U"
-                      }
+                      src={profilePicture || "https://placehold.co/40x40/png?text=U"}
                       alt={displayName || "Profile"}
                       className="profile-avatar"
                     />

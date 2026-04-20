@@ -1,29 +1,31 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useParams } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 import Navbar from "../components/Navbar"
 import ReviewCard from "../components/ReviewCard"
 import { ownerApi, restaurantApi, reviewApi, userApi } from "../api/axios"
+import { fetchReviewsForRestaurant, setReviewPendingStatus } from "../store/slices/reviewsSlice"
 
 export default function RestaurantDetails() {
   const { id } = useParams()
+  const dispatch = useDispatch()
   const role = localStorage.getItem("role")
   const [restaurant, setRestaurant] = useState(null)
-  const [reviews, setReviews] = useState([])
   const [history, setHistory] = useState({ reviews: [] })
   const [activePhoto, setActivePhoto] = useState(0)
 
-  const loadData = async () => {
-  try {
-    const restaurantRes = await restaurantApi.get(`/restaurants/${id}`)
-    setRestaurant(restaurantRes.data)
+  const reviews = useSelector((s) => s.reviews.byRestaurantId[id] || [])
 
+  const loadData = async () => {
     try {
-      const reviewRes = await reviewApi.get(`/restaurants/${id}/reviews`)
-      setReviews(reviewRes.data || [])
+      const restaurantRes = await restaurantApi.get(`/restaurants/${id}`)
+      setRestaurant(restaurantRes.data)
     } catch (err) {
-      console.error("Failed to load reviews:", err?.response?.data || err.message)
-      setReviews([])
+      console.error("Failed to load restaurant:", err?.response?.data || err.message)
+      setRestaurant(null)
     }
+
+    dispatch(fetchReviewsForRestaurant(id))
 
     if (role === "user") {
       try {
@@ -34,15 +36,11 @@ export default function RestaurantDetails() {
         setHistory({ reviews: [] })
       }
     }
-  } catch (err) {
-    console.error("Failed to load restaurant:", err?.response?.data || err.message)
-    setRestaurant(null)
   }
-}
 
   useEffect(() => {
     loadData()
-  }, [id])
+  }, [id, dispatch])
 
   const myReviewIds = useMemo(() => {
     return new Set((history.reviews || []).map((r) => r.review_id))
@@ -52,7 +50,8 @@ export default function RestaurantDetails() {
     const confirmed = window.confirm("Are you sure you want to delete review?")
     if (!confirmed) return
     await reviewApi.delete(`/reviews/${reviewId}`)
-    loadData()
+    dispatch(setReviewPendingStatus({ reviewId, status: "queued", message: "Delete queued" }))
+    dispatch(fetchReviewsForRestaurant(id))
   }
 
   const addFavorite = async () => {
