@@ -7,6 +7,7 @@ from pymongo.database import Database
 from app.db import get_db
 from app.schemas import RestaurantCardOut, RestaurantOut, RestaurantCreateIn, RestaurantUpdateIn, AddPhotosIn
 from app.deps import get_current_user, get_current_owner
+from app.kafka_producer import kafka_send
 
 router = APIRouter(prefix="/restaurants", tags=["restaurants"])
 
@@ -20,7 +21,7 @@ def oid(value: str) -> ObjectId:
 
 def serialize_restaurant(doc: dict) -> dict:
     return {
-        "restaurant_id": str(doc["_id"]),
+        "restaurant_id": str(doc["_id"]) if doc.get("_id") else doc.get("restaurant_id", "pending"),
         "name": doc.get("name"),
         "cuisine_type": doc.get("cuisine_type"),
         "city": doc.get("city"),
@@ -51,7 +52,6 @@ def search_restaurants(
     sort: str | None = Query(default="rating"),
 ):
     mongo_query: dict = {}
-
     if name:
         mongo_query["name"] = {"$regex": name, "$options": "i"}
     if city:
@@ -60,7 +60,6 @@ def search_restaurants(
         mongo_query["zip_code"] = {"$regex": zip_code, "$options": "i"}
     if price:
         mongo_query["price_tier"] = price
-
     if cuisine or keyword:
         search_term = cuisine or keyword
         mongo_query["$or"] = [
@@ -69,13 +68,11 @@ def search_restaurants(
             {"description": {"$regex": search_term, "$options": "i"}},
             {"contact_info": {"$regex": search_term, "$options": "i"}},
         ]
-
     sort_field = "avg_rating"
     if sort == "new":
         sort_field = "created_at"
     elif sort == "reviews":
         sort_field = "review_count"
-
     docs = list(db["restaurants"].find(mongo_query).sort(sort_field, DESCENDING).limit(100))
     return [serialize_restaurant(doc) for doc in docs]
 
@@ -94,7 +91,8 @@ def create_restaurant(
     db: Database = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    restaurant = {
+    created_at = datetime.now(timezone.utc)
+    event = {
         "name": body.name,
         "cuisine_type": body.cuisine_type,
         "city": body.city,
@@ -104,17 +102,31 @@ def create_restaurant(
         "hours": body.hours,
         "contact_info": body.contact_info,
         "price_tier": body.price_tier,
-        "created_by_user_id": current_user["_id"],
+        "created_by_user_id": str(current_user["_id"]),
         "claimed_by_owner_id": None,
-        "photos": body.photos if body.photos else [],
+        "photos": body.photos or [],
+        "created_at": created_at.isoformat(),
+    }
+    kafka_send("restaurant.created", event)
+
+    return {
+        "restaurant_id": "pending",
+        "name": body.name,
+        "cuisine_type": body.cuisine_type,
+        "city": body.city,
+        "zip_code": body.zip_code,
+        "address": body.address,
+        "description": body.description,
+        "hours": body.hours,
+        "contact_info": body.contact_info,
+        "price_tier": body.price_tier,
+        "photos": body.photos or [],
         "avg_rating": 0.0,
         "review_count": 0,
-        "created_at": datetime.now(timezone.utc),
+        "created_by_user_id": str(current_user["_id"]),
+        "claimed_by_owner_id": None,
+        "created_at": created_at,
     }
-
-    result = db["restaurants"].insert_one(restaurant)
-    created = db["restaurants"].find_one({"_id": result.inserted_id})
-    return serialize_restaurant(created)
 
 
 @router.put("/{restaurant_id}", response_model=RestaurantOut)
@@ -127,23 +139,22 @@ def update_restaurant_owner_only(
     r = db["restaurants"].find_one({"_id": oid(restaurant_id)})
     if not r:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-
-    claimed_by = r.get("claimed_by_owner_id")
-    if claimed_by != current_owner["_id"]:
+    if r.get("claimed_by_owner_id") != current_owner["_id"]:
         raise HTTPException(status_code=403, detail="You can only update restaurants you claimed")
 
     updates = body.model_dump(exclude_unset=True)
     if not updates:
-        updated = db["restaurants"].find_one({"_id": r["_id"]})
-        return serialize_restaurant(updated)
+        return serialize_restaurant(r)
 
-    db["restaurants"].update_one(
-        {"_id": r["_id"]},
-        {"$set": updates},
-    )
+    kafka_send("restaurant.updated", {
+        "restaurant_id": restaurant_id,
+        "owner_id": str(current_owner["_id"]),
+        "updates": updates,
+    })
 
-    updated = db["restaurants"].find_one({"_id": r["_id"]})
-    return serialize_restaurant(updated)
+    preview = r.copy()
+    preview.update(updates)
+    return serialize_restaurant(preview)
 
 
 @router.post("/{restaurant_id}/photos", response_model=RestaurantOut)
@@ -156,15 +167,16 @@ def add_photos(
     r = db["restaurants"].find_one({"_id": oid(restaurant_id)})
     if not r:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-
-    claimed_by = r.get("claimed_by_owner_id")
-    if claimed_by != current_owner["_id"]:
+    if r.get("claimed_by_owner_id") != current_owner["_id"]:
         raise HTTPException(status_code=403, detail="You can only add photos to restaurants you claimed")
 
-    db["restaurants"].update_one(
-        {"_id": r["_id"]},
-        {"$push": {"photos": {"$each": body.photos}}},
-    )
+    updated_photos = r.get("photos", []) + body.photos
+    kafka_send("restaurant.updated", {
+        "restaurant_id": restaurant_id,
+        "owner_id": str(current_owner["_id"]),
+        "updates": {"photos": updated_photos},
+    })
 
-    updated = db["restaurants"].find_one({"_id": r["_id"]})
-    return serialize_restaurant(updated)
+    preview = r.copy()
+    preview["photos"] = updated_photos
+    return serialize_restaurant(preview)

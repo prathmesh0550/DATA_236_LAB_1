@@ -9,13 +9,19 @@ export default function AddRestaurant() {
     name: "",
     cuisine_type: "",
     city: "",
-    zip: "",
+    zip_code: "",
     address: "",
     description: "",
     hours: "",
     contact_info: ""
   })
   const [photos, setPhotos] = useState([])
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || [])
@@ -35,12 +41,30 @@ export default function AddRestaurant() {
 
   const submit = async (e) => {
     e.preventDefault()
-    const payload = {
-      ...form,
-      photos
+    setError("")
+    setLoading(true)
+
+    try {
+      const payload = {
+        name: form.name,
+        cuisine_type: form.cuisine_type,
+        city: form.city,
+        zip_code: form.zip_code,
+        address: form.address,
+        description: form.description,
+        hours: form.hours,
+        contact_info: form.contact_info,
+        photos
+      }
+
+      await restaurantApi.post("/restaurants", payload)
+      navigate("/")
+    } catch (err) {
+      console.error("Failed to create restaurant:", err)
+      setError(err.response?.data?.detail || "Failed to create restaurant. Please try again.")
+    } finally {
+      setLoading(false)
     }
-    const res = await restaurantApi.post("/restaurants", payload)
-    navigate(`/restaurant/${res.data.restaurant_id}`)
   }
 
   return (
@@ -51,45 +75,51 @@ export default function AddRestaurant() {
         <div className="simple-card enhanced-form-card">
           <h2>Add Restaurant</h2>
 
+          {error && (
+            <div className="error-message" style={{ color: "red", marginBottom: "1rem" }}>
+              {error}
+            </div>
+          )}
+
           <form className="auth-form" onSubmit={submit}>
             <div className="field-group">
               <label>Name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input name="name" value={form.name} onChange={handleChange} required />
             </div>
 
             <div className="field-group">
               <label>Cuisine Type</label>
-              <input value={form.cuisine_type} onChange={(e) => setForm({ ...form, cuisine_type: e.target.value })} />
+              <input name="cuisine_type" value={form.cuisine_type} onChange={handleChange} required />
             </div>
 
             <div className="field-group">
               <label>City</label>
-              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+              <input name="city" value={form.city} onChange={handleChange} required />
             </div>
 
             <div className="field-group">
               <label>Zip Code</label>
-              <input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
+              <input name="zip_code" value={form.zip_code} onChange={handleChange} required />
             </div>
 
             <div className="field-group">
               <label>Address</label>
-              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <input name="address" value={form.address} onChange={handleChange} required />
             </div>
 
             <div className="field-group">
               <label>Description</label>
-              <textarea rows="4" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <textarea name="description" rows="4" value={form.description} onChange={handleChange} />
             </div>
 
             <div className="field-group">
               <label>Hours</label>
-              <input value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
+              <input name="hours" value={form.hours} onChange={handleChange} />
             </div>
 
             <div className="field-group">
               <label>Contact Info</label>
-              <input value={form.contact_info} onChange={(e) => setForm({ ...form, contact_info: e.target.value })} />
+              <input name="contact_info" value={form.contact_info} onChange={handleChange} />
             </div>
 
             <div className="field-group">
@@ -108,7 +138,9 @@ export default function AddRestaurant() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary full-width">Create Restaurant</button>
+            <button type="submit" className="btn btn-primary full-width" disabled={loading}>
+              {loading ? "Creating..." : "Create Restaurant"}
+            </button>
           </form>
         </div>
       </div>

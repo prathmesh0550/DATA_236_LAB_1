@@ -37,6 +37,11 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     networks:
       - yelpnet
 
@@ -45,8 +50,10 @@ services:
       context: ./services/user-service
     container_name: user-service
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     ports:
       - "8000:8000"
     environment:
@@ -64,8 +71,10 @@ services:
       context: ./services/owner-service
     container_name: owner-service
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     ports:
       - "8001:8000"
     environment:
@@ -83,8 +92,10 @@ services:
       context: ./services/restaurant-service
     container_name: restaurant-service
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     ports:
       - "8002:8000"
     environment:
@@ -102,8 +113,10 @@ services:
       context: ./services/review-service
     container_name: review-service
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     ports:
       - "8003:8000"
     environment:
@@ -121,8 +134,10 @@ services:
       context: ./services/user-worker
     container_name: user-worker
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     environment:
       MONGO_URI: mongodb://mongodb:27017
       MONGO_DB_NAME: yelp_lab2
@@ -136,8 +151,10 @@ services:
       context: ./services/restaurant-worker
     container_name: restaurant-worker
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     environment:
       MONGO_URI: mongodb://mongodb:27017
       MONGO_DB_NAME: yelp_lab2
@@ -151,8 +168,10 @@ services:
       context: ./services/review-worker
     container_name: review-worker
     depends_on:
-      - mongodb
-      - kafka
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     environment:
       MONGO_URI: mongodb://mongodb:27017
       MONGO_DB_NAME: yelp_lab2

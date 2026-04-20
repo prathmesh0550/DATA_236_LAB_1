@@ -5,6 +5,7 @@ from pymongo.database import Database
 from app.db import get_db
 from app.schemas import RestaurantCardOut
 from app.deps import get_current_user
+from app.kafka_producer import kafka_send
 
 router = APIRouter(prefix="", tags=["favorites"])
 
@@ -36,23 +37,10 @@ def add_favorite(
     db: Database = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    restaurant_oid = oid(restaurant_id)
-
-    r = db["restaurants"].find_one({"_id": restaurant_oid})
+    r = db["restaurants"].find_one({"_id": oid(restaurant_id)})
     if not r:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-
-    exists = db["favorites"].find_one({
-        "user_id": current_user["_id"],
-        "restaurant_id": restaurant_oid,
-    })
-    if exists:
-        return {"restaurant_id": restaurant_id, "favorited": True}
-
-    db["favorites"].insert_one({
-        "user_id": current_user["_id"],
-        "restaurant_id": restaurant_oid,
-    })
+    kafka_send("favorite.added", {"user_id": str(current_user["_id"]), "restaurant_id": restaurant_id})
     return {"restaurant_id": restaurant_id, "favorited": True}
 
 
@@ -62,23 +50,15 @@ def remove_favorite(
     db: Database = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    db["favorites"].delete_one({
-        "user_id": current_user["_id"],
-        "restaurant_id": oid(restaurant_id),
-    })
+    kafka_send("favorite.removed", {"user_id": str(current_user["_id"]), "restaurant_id": restaurant_id})
     return None
 
 
 @router.get("/users/me/favorites", response_model=list[RestaurantCardOut])
-def list_favorites(
-    db: Database = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
+def list_favorites(db: Database = Depends(get_db), current_user: dict = Depends(get_current_user)):
     favs = list(db["favorites"].find({"user_id": current_user["_id"]}))
     restaurant_ids = [f["restaurant_id"] for f in favs]
-
     if not restaurant_ids:
         return []
-
     restaurants = list(db["restaurants"].find({"_id": {"$in": restaurant_ids}}))
     return [serialize_restaurant_card(r) for r in restaurants]

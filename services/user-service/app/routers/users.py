@@ -5,16 +5,12 @@ from pymongo.database import Database
 
 from app.db import get_db
 from app.schemas import (
-    UserProfileOut,
-    UserProfileUpdateIn,
-    ProfilePictureIn,
-    PreferencesOut,
-    PreferencesIn,
-    UserHistoryOut,
-    UserHistoryRestaurantOut,
-    UserHistoryReviewOut,
+    UserProfileOut, UserProfileUpdateIn, ProfilePictureIn,
+    PreferencesOut, PreferencesIn, UserHistoryOut,
+    UserHistoryRestaurantOut, UserHistoryReviewOut,
 )
 from app.deps import get_current_user
+from app.kafka_producer import kafka_send
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -48,13 +44,10 @@ def update_me(
 ):
     updates = body.model_dump(exclude_unset=True)
     if updates:
-        db["users"].update_one(
-            {"_id": current_user["_id"]},
-            {"$set": updates},
-        )
-
-    updated_user = db["users"].find_one({"_id": current_user["_id"]})
-    return serialize_user_profile(updated_user)
+        kafka_send("user.updated", {"user_id": str(current_user["_id"]), "updates": updates})
+    preview = current_user.copy()
+    preview.update(updates)
+    return serialize_user_profile(preview)
 
 
 @router.post("/me/profile-picture", response_model=UserProfileOut)
@@ -63,19 +56,17 @@ def set_profile_picture(
     db: Database = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    db["users"].update_one(
-        {"_id": current_user["_id"]},
-        {"$set": {"profile_picture": body.profile_picture}},
-    )
-    updated_user = db["users"].find_one({"_id": current_user["_id"]})
-    return serialize_user_profile(updated_user)
+    kafka_send("user.updated", {
+        "user_id": str(current_user["_id"]),
+        "updates": {"profile_picture": body.profile_picture},
+    })
+    preview = current_user.copy()
+    preview["profile_picture"] = body.profile_picture
+    return serialize_user_profile(preview)
 
 
 @router.get("/me/preferences", response_model=PreferencesOut)
-def get_preferences(
-    db: Database = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
+def get_preferences(db: Database = Depends(get_db), current_user: dict = Depends(get_current_user)):
     pref = db["user_preferences"].find_one({"user_id": current_user["_id"]})
     if not pref:
         pref = {
@@ -101,79 +92,70 @@ def upsert_preferences(
     current_user: dict = Depends(get_current_user),
 ):
     data = body.model_dump(exclude_unset=True)
-
     if "cuisines" in data and data["cuisines"]:
         normalized = []
         for c in data["cuisines"]:
             normalized.extend([x.strip() for x in c.split(",") if x.strip()])
         data["cuisines"] = normalized
 
-    data["updated_at"] = datetime.now(timezone.utc)
+    updated_at = datetime.now(timezone.utc)
+    kafka_send("user.preferences.updated", {
+        "user_id": str(current_user["_id"]),
+        "preferences": data,
+        "updated_at": updated_at.isoformat(),
+    })
 
-    db["user_preferences"].update_one(
-        {"user_id": current_user["_id"]},
-        {"$set": data, "$setOnInsert": {"user_id": current_user["_id"]}},
-        upsert=True,
-    )
+    existing = db["user_preferences"].find_one({"user_id": current_user["_id"]})
+    if existing:
+        existing.pop("_id", None)
+        existing.pop("user_id", None)
+        existing.update(data)
+        existing["updated_at"] = updated_at
+        return existing
 
-    pref = db["user_preferences"].find_one({"user_id": current_user["_id"]})
-    pref.pop("_id", None)
-    pref.pop("user_id", None)
-    return pref
+    return {
+        "cuisines": data.get("cuisines", []),
+        "price_range": data.get("price_range"),
+        "dietary_needs": data.get("dietary_needs", []),
+        "search_radius": data.get("search_radius"),
+        "ambiance_preferences": data.get("ambiance_preferences", []),
+        "sort_preference": data.get("sort_preference"),
+        "updated_at": updated_at,
+    }
 
 
 @router.get("/me/history", response_model=UserHistoryOut)
-def get_user_history(
-    db: Database = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    reviews = list(
-        db["reviews"]
-        .find({"user_id": current_user["_id"]})
-        .sort("review_date", DESCENDING)
-    )
-
-    restaurants_added = list(
-        db["restaurants"]
-        .find({"created_by_user_id": current_user["_id"]})
-        .sort("created_at", DESCENDING)
-    )
+def get_user_history(db: Database = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    reviews = list(db["reviews"].find({"user_id": current_user["_id"]}).sort("review_date", DESCENDING))
+    restaurants_added = list(db["restaurants"].find({"created_by_user_id": current_user["_id"]}).sort("created_at", DESCENDING))
 
     restaurant_map = {
         str(r["_id"]): r.get("name", "Unknown Restaurant")
-        for r in db["restaurants"].find(
-            {"_id": {"$in": [rv["restaurant_id"] for rv in reviews]}}
-        )
+        for r in db["restaurants"].find({"_id": {"$in": [rv["restaurant_id"] for rv in reviews]}})
     } if reviews else {}
 
-    review_items = [
-        UserHistoryReviewOut(
-            review_id=str(review["_id"]),
-            restaurant_id=str(review["restaurant_id"]),
-            restaurant_name=restaurant_map.get(str(review["restaurant_id"]), "Unknown Restaurant"),
-            rating=review["rating"],
-            comment=review.get("comment"),
-            review_date=review["review_date"],
-        )
-        for review in reviews
-    ]
-
-    restaurant_items = [
-        UserHistoryRestaurantOut(
-            restaurant_id=str(r["_id"]),
-            name=r.get("name"),
-            cuisine_type=r.get("cuisine_type"),
-            city=r.get("city"),
-            price_tier=r.get("price_tier"),
-            avg_rating=float(r.get("avg_rating", 0.0) or 0.0),
-            review_count=int(r.get("review_count", 0) or 0),
-            photos=r.get("photos", []),
-            created_at=r.get("created_at"),
-        )
-        for r in restaurants_added
-    ]
-
     return UserHistoryOut(
-        reviews=review_items,
-        restaurants_added=restaurant_items,
+        reviews=[
+            UserHistoryReviewOut(
+                review_id=str(r["_id"]),
+                restaurant_id=str(r["restaurant_id"]),
+                restaurant_name=restaurant_map.get(str(r["restaurant_id"]), "Unknown Restaurant"),
+                rating=r["rating"],
+                comment=r.get("comment"),
+                review_date=r["review_date"],
+            ) for r in reviews
+        ],
+        restaurants_added=[
+            UserHistoryRestaurantOut(
+                restaurant_id=str(r["_id"]),
+                name=r.get("name"),
+                cuisine_type=r.get("cuisine_type"),
+                city=r.get("city"),
+                price_tier=r.get("price_tier"),
+                avg_rating=float(r.get("avg_rating", 0.0) or 0.0),
+                review_count=int(r.get("review_count", 0) or 0),
+                photos=r.get("photos", []),
+                created_at=r.get("created_at"),
+            ) for r in restaurants_added
+        ],
     )
