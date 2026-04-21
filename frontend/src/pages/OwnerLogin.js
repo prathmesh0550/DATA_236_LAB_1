@@ -18,7 +18,7 @@ export default function OwnerLogin() {
       headers: { "Content-Type": "application/x-www-form-urlencoded" }
     })
 
-    localStorage.setItem("token", loginRes.data.access_token)
+    localStorage.setItem("ownerToken", loginRes.data.access_token)
     localStorage.setItem("role", "owner")
 
     const meRes = await ownerApi.get("/auth/me")

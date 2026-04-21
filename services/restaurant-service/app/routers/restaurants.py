@@ -89,7 +89,7 @@ def get_restaurant(restaurant_id: str, db: Database = Depends(get_db)):
 def create_restaurant(
     body: RestaurantCreateIn,
     db: Database = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_owner: dict = Depends(get_current_owner),
 ):
     created_at = datetime.now(timezone.utc)
     event = {
@@ -102,8 +102,8 @@ def create_restaurant(
         "hours": body.hours,
         "contact_info": body.contact_info,
         "price_tier": body.price_tier,
-        "created_by_user_id": str(current_user["_id"]),
-        "claimed_by_owner_id": None,
+        "created_by_user_id": str(current_owner["_id"]),
+        "claimed_by_owner_id": str(current_owner["_id"]),
         "photos": body.photos or [],
         "created_at": created_at.isoformat(),
     }
@@ -123,8 +123,8 @@ def create_restaurant(
         "photos": body.photos or [],
         "avg_rating": 0.0,
         "review_count": 0,
-        "created_by_user_id": str(current_user["_id"]),
-        "claimed_by_owner_id": None,
+        "created_by_user_id": str(current_owner["_id"]),
+        "claimed_by_owner_id": str(current_owner["_id"]),
         "created_at": created_at,
     }
 

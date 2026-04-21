@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const addAuthInterceptor = (client) => {
+const addAuthInterceptor = (client, tokenKey = "token") => {
   client.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(tokenKey);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,8 +26,10 @@ export const reviewApi = axios.create({
   baseURL: "http://localhost:8003",
 });
 
-[userApi, ownerApi, restaurantApi, reviewApi].forEach(addAuthInterceptor);
+addAuthInterceptor(userApi, "token");
+addAuthInterceptor(ownerApi, "ownerToken");
+addAuthInterceptor(restaurantApi, "ownerToken");
+addAuthInterceptor(reviewApi, "token");
 
-// temporary compatibility export
 const API = userApi;
 export default API;

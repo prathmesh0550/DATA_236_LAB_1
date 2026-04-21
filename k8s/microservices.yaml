@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: user-service:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/user-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:
@@ -63,8 +63,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: owner-service:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/owner-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:
@@ -111,8 +111,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: restaurant-service:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/restaurant-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:
@@ -159,8 +159,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: review-service:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/review-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:
@@ -207,8 +207,8 @@ spec:
     spec:
       containers:
         - name: worker
-          image: user-worker:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/user-worker:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: yelp-config
@@ -235,8 +235,8 @@ spec:
     spec:
       containers:
         - name: worker
-          image: restaurant-worker:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/restaurant-worker:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: yelp-config
@@ -263,8 +263,8 @@ spec:
     spec:
       containers:
         - name: worker
-          image: review-worker:latest
-          imagePullPolicy: Never
+          image: 358304212325.dkr.ecr.us-west-1.amazonaws.com/services/review-worker:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: yelp-config

@@ -13,7 +13,8 @@ export default function OwnerAddRestaurant() {
     address: "",
     description: "",
     hours: "",
-    contact_info: ""
+    contact_info: "",
+    price_tier: "$"
   })
   const [photos, setPhotos] = useState([])
 
@@ -37,12 +38,20 @@ export default function OwnerAddRestaurant() {
     e.preventDefault()
 
     const payload = {
-      ...form,
+      name: form.name,
+      cuisine_type: form.cuisine_type,
+      city: form.city,
+      zip_code: form.zip,
+      address: form.address,
+      description: form.description,
+      hours: form.hours,
+      contact_info: form.contact_info,
+      price_tier: form.price_tier,
       photos
     }
 
     const res = await restaurantApi.post("/restaurants", payload)
-    navigate(`/restaurant/${res.data.restaurant_id}`)
+    navigate("/")
   }
 
   return (
@@ -93,6 +102,16 @@ export default function OwnerAddRestaurant() {
             <div className="field-group">
               <label>Contact Info</label>
               <input value={form.contact_info} onChange={(e) => setForm({ ...form, contact_info: e.target.value })} />
+            </div>
+
+            <div className="field-group">
+              <label>Price Tier</label>
+              <select value={form.price_tier} onChange={(e) => setForm({ ...form, price_tier: e.target.value })}>
+                <option value="$">$</option>
+                <option value="$$">$$</option>
+                <option value="$$$">$$$</option>
+                <option value="$$$$">$$$$</option>
+              </select>
             </div>
 
             <div className="field-group">
