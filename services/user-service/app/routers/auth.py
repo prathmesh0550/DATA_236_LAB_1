@@ -1,3 +1,4 @@
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pymongo.database import Database
@@ -49,6 +50,16 @@ def user_login(
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(str(user["_id"]), role="user")
+
+    now = datetime.now(timezone.utc)
+    db["sessions"].insert_one({
+        "user_id": user["_id"],
+        "token": token,
+        "role": "user",
+        "created_at": now,
+        "expires_at": now + timedelta(minutes=60),
+    })
+
     return TokenOut(access_token=token, token_type="bearer")
 
 
