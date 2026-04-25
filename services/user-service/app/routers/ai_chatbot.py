@@ -471,6 +471,10 @@ async def chat(
         for m in (request.conversation_history or [])[-8:]
     )
 
+    GREETING_WORDS = {"hello", "hi", "hey", "howdy", "greetings", "sup", "yo"}
+    if _norm(message) in GREETING_WORDS:
+        return ChatResponse(reply="What can I help you with?", restaurants=[])
+
     msg_lower = _norm(message)
     has_new_cuisine = any(c.lower() in msg_lower for c in cuisines if c) or any(kw in msg_lower for kw in CUISINE_KW)
     has_new_city = any(c.lower() in msg_lower for c in cities if c)

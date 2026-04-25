@@ -30,8 +30,12 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, { role: "user", text: userText, cards: [] }])
     setLoading(true)
 
+    const SYSTEM_MESSAGES = [
+      "Hi! Ask me about cuisines, cities, ratings, or restaurant recommendations.",
+      "What can I help you with?"
+    ]
     const history = messages
-      .filter((m) => m.text !== "Hi! Ask me about cuisines, cities, ratings, or restaurant recommendations.")
+      .filter((m) => !SYSTEM_MESSAGES.includes(m.text))
       .map((m) => ({ role: m.role, content: m.text }))
 
     try {
