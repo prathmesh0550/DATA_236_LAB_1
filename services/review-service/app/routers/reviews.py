@@ -40,6 +40,22 @@ def list_reviews(restaurant_id: str, db: Database = Depends(get_db)):
     return [serialize_review(r) for r in reviews]
 
 
+def refresh_restaurant_rating(db: Database, restaurant_oid: ObjectId) -> None:
+    pipeline = [
+        {"$match": {"restaurant_id": restaurant_oid}},
+        {"$group": {"_id": "$restaurant_id", "review_count": {"$sum": 1}, "avg_rating": {"$avg": "$rating"}}},
+    ]
+    agg = list(db["reviews"].aggregate(pipeline))
+    if not agg:
+        db["restaurants"].update_one({"_id": restaurant_oid}, {"$set": {"review_count": 0, "avg_rating": 0.0}})
+        return
+    stats = agg[0]
+    db["restaurants"].update_one(
+        {"_id": restaurant_oid},
+        {"$set": {"review_count": int(stats["review_count"]), "avg_rating": float(stats["avg_rating"])}},
+    )
+
+
 @router.post("/restaurants/{restaurant_id}/reviews", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
 def create_review(
     restaurant_id: str,
@@ -53,18 +69,33 @@ def create_review(
         raise HTTPException(status_code=404, detail="Restaurant not found")
 
     review_date = datetime.now(timezone.utc)
-    event = {
+    new_id = ObjectId()
+    doc = {
+        "_id": new_id,
+        "restaurant_id": restaurant_oid,
+        "user_id": current_user["_id"],
+        "rating": body.rating,
+        "comment": body.comment,
+        "photos": body.photos or [],
+        "review_date": review_date,
+    }
+    db["reviews"].insert_one(doc)
+    refresh_restaurant_rating(db, restaurant_oid)
+
+    # Kafka event carries metadata only — photos excluded to stay within broker size limits.
+    # Worker uses upsert so it's a no-op if the document already exists.
+    kafka_send("review.created", {
+        "review_id": str(new_id),
         "restaurant_id": str(restaurant_oid),
         "user_id": str(current_user["_id"]),
         "rating": body.rating,
         "comment": body.comment,
-        "photos": body.photos or [],
+        "photos": [],
         "review_date": review_date.isoformat(),
-    }
-    kafka_send("review.created", event)
+    })
 
     return {
-        "review_id": "pending",
+        "review_id": str(new_id),
         "restaurant_id": str(restaurant_oid),
         "user_id": str(current_user["_id"]),
         "rating": body.rating,

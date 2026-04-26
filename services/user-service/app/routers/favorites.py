@@ -40,7 +40,9 @@ def add_favorite(
     r = db["restaurants"].find_one({"_id": oid(restaurant_id)})
     if not r:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    kafka_send("favorite.added", {"user_id": str(current_user["_id"]), "restaurant_id": restaurant_id})
+    existing = db["favorites"].find_one({"user_id": current_user["_id"], "restaurant_id": oid(restaurant_id)})
+    if not existing:
+        db["favorites"].insert_one({"user_id": current_user["_id"], "restaurant_id": oid(restaurant_id)})
     return {"restaurant_id": restaurant_id, "favorited": True}
 
 

@@ -37,7 +37,8 @@ def refresh_restaurant_rating(restaurant_id: ObjectId) -> None:
 
 
 def consume_review_created(event: dict):
-    review = {
+    review_id = ObjectId(event["review_id"]) if event.get("review_id") else None
+    doc = {
         "restaurant_id": ObjectId(event["restaurant_id"]),
         "user_id": ObjectId(event["user_id"]),
         "rating": event["rating"],
@@ -45,9 +46,13 @@ def consume_review_created(event: dict):
         "photos": event.get("photos", []),
         "review_date": parse_dt(event["review_date"]),
     }
-    result = db["reviews"].insert_one(review)
-    refresh_restaurant_rating(review["restaurant_id"])
-    print(f"[review.created] inserted review={result.inserted_id}", flush=True)
+    filter_q = {"_id": review_id} if review_id else {"restaurant_id": doc["restaurant_id"], "user_id": doc["user_id"], "review_date": doc["review_date"]}
+    result = db["reviews"].update_one(filter_q, {"$setOnInsert": doc}, upsert=True)
+    if result.upserted_id:
+        refresh_restaurant_rating(doc["restaurant_id"])
+        print(f"[review.created] inserted review={result.upserted_id}", flush=True)
+    else:
+        print(f"[review.created] already exists, skipped review_id={review_id}", flush=True)
 
 
 def consume_review_updated(event: dict):

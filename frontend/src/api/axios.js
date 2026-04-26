@@ -28,8 +28,18 @@ export const reviewApi = axios.create({
 
 addAuthInterceptor(userApi, "token");
 addAuthInterceptor(ownerApi, "ownerToken");
-addAuthInterceptor(restaurantApi, "ownerToken");
 addAuthInterceptor(reviewApi, "token");
+
+restaurantApi.interceptors.request.use((config) => {
+  const role = localStorage.getItem("role");
+  const token = role === "owner"
+    ? localStorage.getItem("ownerToken")
+    : localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const API = userApi;
 export default API;

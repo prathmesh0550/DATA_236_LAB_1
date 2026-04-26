@@ -104,7 +104,7 @@ export default function RestaurantDetails() {
               <span>{restaurant.city || "City"}</span>
               <span>{restaurant.zip_code || "No zip code"}</span>
               <span>{restaurant.address || "No address"}</span>
-              <span>{restaurant.avg_rating || 0}</span>
+              <span>{Number(restaurant.avg_rating || 0).toFixed(1)}</span>
               <span>{restaurant.review_count || 0} reviews</span>
             </div>
 

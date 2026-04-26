@@ -38,7 +38,6 @@ export default function EditRestaurant() {
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
-
     Promise.all(
       files.map(
         (file) =>

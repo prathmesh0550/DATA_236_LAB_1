@@ -13,7 +13,8 @@ export default function AddRestaurant() {
     address: "",
     description: "",
     hours: "",
-    contact_info: ""
+    contact_info: "",
+    price_tier: "$"
   })
   const [photos, setPhotos] = useState([])
   const [error, setError] = useState("")
@@ -26,7 +27,6 @@ export default function AddRestaurant() {
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
-
     Promise.all(
       files.map(
         (file) =>
@@ -54,6 +54,7 @@ export default function AddRestaurant() {
         description: form.description,
         hours: form.hours,
         contact_info: form.contact_info,
+        price_tier: form.price_tier,
         photos
       }
 
@@ -120,6 +121,16 @@ export default function AddRestaurant() {
             <div className="field-group">
               <label>Contact Info</label>
               <input name="contact_info" value={form.contact_info} onChange={handleChange} />
+            </div>
+
+            <div className="field-group">
+              <label>Price Tier</label>
+              <select name="price_tier" value={form.price_tier} onChange={handleChange}>
+                <option value="$">$</option>
+                <option value="$$">$$</option>
+                <option value="$$$">$$$</option>
+                <option value="$$$$">$$$$</option>
+              </select>
             </div>
 
             <div className="field-group">

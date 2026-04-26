@@ -6,7 +6,7 @@ from pymongo.database import Database
 
 from app.db import get_db
 from app.schemas import RestaurantCardOut, RestaurantOut, RestaurantCreateIn, RestaurantUpdateIn, AddPhotosIn
-from app.deps import get_current_user, get_current_owner
+from app.deps import get_current_user, get_current_owner, get_current_user_or_owner
 from app.kafka_producer import kafka_send
 
 router = APIRouter(prefix="/restaurants", tags=["restaurants"])
@@ -89,28 +89,16 @@ def get_restaurant(restaurant_id: str, db: Database = Depends(get_db)):
 def create_restaurant(
     body: RestaurantCreateIn,
     db: Database = Depends(get_db),
-    current_owner: dict = Depends(get_current_owner),
+    caller: dict = Depends(get_current_user_or_owner),
 ):
     created_at = datetime.now(timezone.utc)
-    event = {
-        "name": body.name,
-        "cuisine_type": body.cuisine_type,
-        "city": body.city,
-        "zip_code": body.zip_code,
-        "address": body.address,
-        "description": body.description,
-        "hours": body.hours,
-        "contact_info": body.contact_info,
-        "price_tier": body.price_tier,
-        "created_by_user_id": str(current_owner["_id"]),
-        "claimed_by_owner_id": str(current_owner["_id"]),
-        "photos": body.photos or [],
-        "created_at": created_at.isoformat(),
-    }
-    kafka_send("restaurant.created", event)
+    caller_id = str(caller["_id"])
+    is_owner = caller.get("_role") == "owner"
+    photos = body.photos or []
 
-    return {
-        "restaurant_id": "pending",
+    new_id = ObjectId()
+    doc = {
+        "_id": new_id,
         "name": body.name,
         "cuisine_type": body.cuisine_type,
         "city": body.city,
@@ -120,11 +108,50 @@ def create_restaurant(
         "hours": body.hours,
         "contact_info": body.contact_info,
         "price_tier": body.price_tier,
-        "photos": body.photos or [],
+        "created_by_user_id": caller["_id"],
+        "claimed_by_owner_id": caller["_id"] if is_owner else None,
+        "photos": photos,
         "avg_rating": 0.0,
         "review_count": 0,
-        "created_by_user_id": str(current_owner["_id"]),
-        "claimed_by_owner_id": str(current_owner["_id"]),
+        "created_at": created_at,
+    }
+    db["restaurants"].insert_one(doc)
+
+    # Kafka event carries metadata only — photos excluded to stay within broker size limits.
+    # Worker uses upsert so it's a no-op if the document already exists.
+    kafka_send("restaurant.created", {
+        "restaurant_id": str(new_id),
+        "name": body.name,
+        "cuisine_type": body.cuisine_type,
+        "city": body.city,
+        "zip_code": body.zip_code,
+        "address": body.address,
+        "description": body.description,
+        "hours": body.hours,
+        "contact_info": body.contact_info,
+        "price_tier": body.price_tier,
+        "created_by_user_id": caller_id,
+        "claimed_by_owner_id": caller_id if is_owner else None,
+        "photos": [],
+        "created_at": created_at.isoformat(),
+    })
+
+    return {
+        "restaurant_id": str(new_id),
+        "name": body.name,
+        "cuisine_type": body.cuisine_type,
+        "city": body.city,
+        "zip_code": body.zip_code,
+        "address": body.address,
+        "description": body.description,
+        "hours": body.hours,
+        "contact_info": body.contact_info,
+        "price_tier": body.price_tier,
+        "photos": photos,
+        "avg_rating": 0.0,
+        "review_count": 0,
+        "created_by_user_id": caller_id,
+        "claimed_by_owner_id": caller_id if is_owner else None,
         "created_at": created_at,
     }
 

@@ -65,3 +65,39 @@ def get_current_owner(
         raise HTTPException(status_code=401, detail="Owner not found")
 
     return owner
+
+
+def get_current_user_or_owner(
+    db: Database = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+):
+    token = credentials.credentials
+
+    try:
+        payload = decode_token(token)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    role = payload.get("role")
+    subject_id = payload.get("sub")
+    if not subject_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    try:
+        oid = ObjectId(subject_id)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    if role == "user":
+        doc = db["users"].find_one({"_id": oid})
+        if not doc:
+            raise HTTPException(status_code=401, detail="User not found")
+    elif role == "owner":
+        doc = db["owners"].find_one({"_id": oid})
+        if not doc:
+            raise HTTPException(status_code=401, detail="Owner not found")
+    else:
+        raise HTTPException(status_code=403, detail="Invalid role")
+
+    doc["_role"] = role
+    return doc

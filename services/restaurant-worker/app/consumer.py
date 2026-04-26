@@ -15,7 +15,8 @@ def heartbeat():
 
 
 def consume_restaurant_created(event: dict):
-    restaurant = {
+    restaurant_id = ObjectId(event["restaurant_id"]) if event.get("restaurant_id") else None
+    doc = {
         "name": event["name"],
         "cuisine_type": event["cuisine_type"],
         "city": event["city"],
@@ -32,8 +33,12 @@ def consume_restaurant_created(event: dict):
         "review_count": 0,
         "created_at": datetime.fromisoformat(event["created_at"]),
     }
-    result = db["restaurants"].insert_one(restaurant)
-    print(f"[restaurant.created] inserted restaurant={result.inserted_id}", flush=True)
+    filter_q = {"_id": restaurant_id} if restaurant_id else {"name": doc["name"], "created_at": doc["created_at"]}
+    result = db["restaurants"].update_one(filter_q, {"$setOnInsert": doc}, upsert=True)
+    if result.upserted_id:
+        print(f"[restaurant.created] inserted restaurant={result.upserted_id}", flush=True)
+    else:
+        print(f"[restaurant.created] already exists, skipped restaurant_id={restaurant_id}", flush=True)
 
 
 def consume_restaurant_updated(event: dict):
